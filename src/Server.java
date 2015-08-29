@@ -21,7 +21,10 @@ public class Server {
                     OutputStream output = socket.getOutputStream()) {
                 String line;
                 while ((line = br.readLine()) != null) {
-                    
+                    if (line.startsWith("grep")) {
+                        new Grep();
+                        // should close it here or in client?
+                    }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
