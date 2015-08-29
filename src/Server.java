@@ -4,6 +4,13 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Arrays;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 
 public class Server {
     private final ServerSocket serverSocket;
@@ -21,8 +28,25 @@ public class Server {
                     OutputStream output = socket.getOutputStream()) {
                 String line;
                 while ((line = br.readLine()) != null) {
-                    if (line.startsWith("grep")) {
-                        new Grep();
+                    // We can always assume received message is valid,
+                    // because we are only allowed to be contacted by
+                    // client programs, and any mistakes should be detected
+                    // there.
+                    String[] cmd = line.split("\\s+");
+                    if (cmd[0].equals("grep")) {
+                        String[] args = Arrays.copyOfRange(cmd, 1, cmd.length);
+                        CommandLineParser parser = new DefaultParser();
+                        Options options = new Options();
+                        
+                        CommandLine cmdl;
+                        try {
+                            cmdl = parser.parse(options, args);
+                            new Grep(cmdl, output);
+                        } catch (ParseException e) {
+                            // Should never reach here
+                            e.printStackTrace();
+                        }
+                        
                         // should close it here or in client?
                     }
                 }

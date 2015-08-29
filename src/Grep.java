@@ -1,8 +1,11 @@
 import java.io.OutputStream;
-import org.apache.commons.cli.Option;
+
+import org.apache.commons.cli.CommandLine;
 
 public class Grep {
-    public Grep() {
+    
+    
+    public Grep(CommandLine cmdl, OutputStream os) {
         
     }
     
