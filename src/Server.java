@@ -6,10 +6,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Arrays;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 public class Server {
@@ -25,32 +21,25 @@ public class Server {
         @Override
         public void run() {
             try (BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                    OutputStream output = socket.getOutputStream()) {
+                    OutputStream os = socket.getOutputStream()) {
                 String line;
                 while ((line = br.readLine()) != null) {
                     // We can always assume received message is valid,
-                    // because we are only allowed to be contacted by
+                    // since we are only allowed to be contacted by
                     // client programs, and any mistakes should be detected
                     // there.
                     String[] cmd = line.split("\\s+");
-                    if (cmd[0].equals("grep")) {
+                    switch (cmd[0]) {
+                    case "grep":
                         String[] args = Arrays.copyOfRange(cmd, 1, cmd.length);
-                        CommandLineParser parser = new DefaultParser();
-                        Options options = new Options();
-                        
-                        CommandLine cmdl;
-                        try {
-                            cmdl = parser.parse(options, args);
-                            new Grep(cmdl, output);
-                        } catch (ParseException e) {
-                            // Should never reach here
-                            e.printStackTrace();
-                        }
-                        
-                        // should close it here or in client?
+                        (new Grep(args, os)).grep();
+                        break;
+                    // should close it here or in client?
+                    default:
+                        System.err.println("Unsupported Operation.");
                     }
                 }
-            } catch (IOException e) {
+            } catch (IOException | ParseException e) {
                 e.printStackTrace();
             } finally {
                 try {
