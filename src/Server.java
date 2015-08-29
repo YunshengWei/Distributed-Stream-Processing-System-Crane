@@ -33,8 +33,7 @@ public class Server {
                     case "grep":
                         String[] args = Arrays.copyOfRange(cmd, 1, cmd.length);
                         (new Grep(args, os)).grep();
-                        break;
-                    // should close it here or in client?
+                        // this connection should be closed by client?
                     default:
                         System.err.println("Unsupported Operation.");
                     }
