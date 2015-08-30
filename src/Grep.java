@@ -213,7 +213,7 @@ public class Grep {
         try {
             while ((line = br.readLine()) != null) {
                 if (pattern.matcher(line).matches()) {
-                    pw.println(line);
+                    pw.println(prefix + line);
                 }
             }
         } catch (IOException e) {
@@ -245,7 +245,12 @@ public class Grep {
     }
     
     // Unit test
-    public static void main(String args[]) throws ParseException, IOException {
-        
+    public static void main(String args[]) {
+        try {
+            Grep grep = new Grep(args, System.out);
+            grep.execute();
+        } catch (ParseException e) {
+            Grep.printHelp();
+        }
     }
 }
