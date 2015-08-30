@@ -1,5 +1,12 @@
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -13,6 +20,13 @@ public class Grep {
     public static final Options OPTIONS = Grep.buildGrepOptions();
     
     private final OutputStream os;
+    private final Pattern pattern;
+    private final List<String> fileList;
+    
+    public static void printHelp() {
+        HelpFormatter formatter = new HelpFormatter();
+        formatter.printHelp("grep", Grep.OPTIONS);
+    }
     
     private static Options buildGrepOptions() {
         Options options = new Options();
@@ -177,18 +191,61 @@ public class Grep {
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = parser.parse(Grep.OPTIONS, args);
         List<String> argList = cmd.getArgList();
-        //String pattern = argList.get(0);
-        System.err.println(argList);
-        System.err.println(cmd.getParsedOptionValue("A"));
+        
+        String[] regexps = cmd.getOptionValues("e");
+        String regexp;
+        if (regexps != null) {
+            regexp = ".*(" + String.join("|", regexps) + ").*";
+            this.fileList = argList;
+        } else {
+            regexp = ".*" + argList.get(0) + ".*";
+            this.fileList = argList.subList(1, argList.size());
+        }
+        if (cmd.hasOption("ignore-case")) {
+            this.pattern = Pattern.compile(regexp, Pattern.CASE_INSENSITIVE);
+        } else {
+            this.pattern = Pattern.compile(regexp);
+        }
     }
     
-    public void grep() {
+    private static void grep(BufferedReader br, PrintWriter pw, Pattern pattern, String prefix) {
+        String line = null;
+        try {
+            while ((line = br.readLine()) != null) {
+                if (pattern.matcher(line).matches()) {
+                    pw.println(line);
+                }
+            }
+        } catch (IOException e) {
+            System.err.println(prefix + " Error occurs when reading.");
+        }
+    }
+    
+    public void execute() {
+        PrintWriter pw = new PrintWriter(os, true);
+        BufferedReader br;
+        
+        if (fileList.isEmpty()) {
+            br = new BufferedReader(new InputStreamReader(System.in));
+            Grep.grep(br, pw, this.pattern, "");
+        } else {
+            for (String fileName : fileList) {
+                String prefix = fileName + ":";
+                try {
+                    br = new BufferedReader(new FileReader(fileName));
+                    Grep.grep(br, pw, this.pattern, prefix);
+                    br.close();
+                } catch (FileNotFoundException e) {
+                    System.err.println(prefix + " No such file.");
+                } catch (IOException e) {
+                    System.err.println(prefix + " Error occurs when closing.");
+                }
+            }
+        }
     }
     
     // Unit test
-    public static void main(String args[]) throws ParseException {
-        Grep grep = new Grep(new String[] {"-A1"}, System.out);
-        HelpFormatter formatter = new HelpFormatter();
-        formatter.printHelp("grep", Grep.OPTIONS);
+    public static void main(String args[]) throws ParseException, IOException {
+        
     }
 }
