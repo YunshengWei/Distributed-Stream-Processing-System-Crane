@@ -33,11 +33,10 @@ public class Server {
                     case "grep":
                         String[] args = Arrays.copyOfRange(cmd, 1, cmd.length);
                         new Grep(args, os).execute();
-                        // this connection should be closed by client?
-                        break;
+                        return;
                     default:
                         // Should never reach here.
-                        System.err.println("Unsupported Operation.");
+                        System.err.println(String.format("Unsupported Operation：%s.", cmd[0]));
                     }
                 }
             } catch (IOException | ParseException e) {

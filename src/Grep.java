@@ -23,9 +23,19 @@ public class Grep {
     private final Pattern pattern;
     private final List<String> fileList;
     
+    /**
+     * Print help message of Grep to stdout.
+     */
     public static void printHelp() {
         HelpFormatter formatter = new HelpFormatter();
         formatter.printHelp("grep", Grep.OPTIONS);
+    }
+    
+    /**
+     * Print usage of Grep to Stdout.
+     */
+    public static void printUsage() {
+        
     }
     
     private static Options buildGrepOptions() {
@@ -186,6 +196,17 @@ public class Grep {
                         "Stop reading the file after <num> matches.").build());
     }
     
+    /**
+     * Construct Grep from specified options and will output matched lines to
+     * the specified output.
+     * 
+     * @param args
+     *            options for Grep.
+     * @param os
+     *            the OutputStream to which matched lines should be write to.
+     * @throws ParseException
+     *             if any of the specified options is not valid.
+     */
     public Grep(String[] args, OutputStream os) throws ParseException {
         this.os = os;
         CommandLineParser parser = new DefaultParser();
