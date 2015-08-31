@@ -51,6 +51,7 @@ public class LogQuerier {
                 if (socket != null) {
                     try {
                         socket.close();
+                        System.out.flush();
                         System.err.println(host + ": Connection closed.");
                     } catch (IOException e) {
                         System.err.println(host + ": Errors occur when closing socket.");
