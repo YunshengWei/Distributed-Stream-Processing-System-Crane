@@ -32,6 +32,11 @@ public class LogQuerier {
                 System.err.println(host + ": Connected Successfully.");
                 try (PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
                         BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+                    // Notice: A tricky detail here.
+                    // Maybe use json to send args?
+                    /*for (int i = 0; i < args.length; i++) {
+                        args[i] = "\"" + args[i] + "\"";
+                    }*/
                     pw.println("grep " + String.join(" ", args) + " " + Catalog.getLogDirectory());
                     
                     String matchedLine = null;
@@ -41,14 +46,12 @@ public class LogQuerier {
                 }
 
             } catch (IOException e) {
-                e.printStackTrace();
-                // Modify here
-                System.err.println(host + ": Failed to connect.");
+                System.err.println(host + ": " + e.getMessage());
             } finally {
                 if (socket != null) {
                     try {
                         socket.close();
-                        System.err.println(host + ": Connections closed.");
+                        System.err.println(host + ": Connection closed.");
                     } catch (IOException e) {
                         System.err.println(host + ": Errors occur when closing socket.");
                     }
@@ -63,14 +66,11 @@ public class LogQuerier {
         try {
             Grep grep = new Grep(args, null);
 
-            List<Socket> sockets = new ArrayList<>();
             for (Catalog.Host host : Catalog.getHosts()) {
                 new Thread(new QueryThread(host, args)).start();
             }
-
-            Selector selector = Selector.open();
         } catch (ParseException e) {
-            System.err.println("Grep: Invalid argument.");
+            System.err.println("Invalid argument.");
             Grep.printUsage();
             System.exit(-1);
         }

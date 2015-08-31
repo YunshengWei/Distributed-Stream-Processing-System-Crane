@@ -27,6 +27,7 @@ public class Grep {
      * Print help message of Grep to stdout.
      */
     public static void printHelp() {
+        //TODO
         HelpFormatter formatter = new HelpFormatter();
         formatter.printHelp("grep", Grep.OPTIONS);
     }
@@ -35,7 +36,7 @@ public class Grep {
      * Print usage of Grep to Stdout.
      */
     public static void printUsage() {
-        
+        //TODO
     }
     
     private static Options buildGrepOptions() {
@@ -219,7 +220,7 @@ public class Grep {
             regexp = ".*(" + String.join("|", regexps) + ").*";
             this.fileList = argList;
         } else {
-            regexp = ".*" + argList.get(0) + ".*";
+            regexp = ".*(" + argList.get(0) + ").*";
             this.fileList = argList.subList(1, argList.size());
         }
         if (cmd.hasOption("ignore-case")) {
