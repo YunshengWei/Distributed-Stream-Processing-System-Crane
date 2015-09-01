@@ -21,6 +21,8 @@ public class Grep {
     
     private final OutputStream os;
     private final Pattern pattern;
+    private final boolean invertMatch;
+    private final boolean count;
     private final List<String> fileList;
     
     /**
@@ -223,20 +225,32 @@ public class Grep {
             regexp = ".*(" + argList.get(0) + ").*";
             this.fileList = argList.subList(1, argList.size());
         }
+        
         if (cmd.hasOption("ignore-case")) {
             this.pattern = Pattern.compile(regexp, Pattern.CASE_INSENSITIVE);
         } else {
             this.pattern = Pattern.compile(regexp);
         }
+        
+        this.invertMatch = cmd.hasOption("invert-match");
+        this.count = cmd.hasOption("count");
     }
     
-    private static void grep(BufferedReader br, PrintWriter pw, Pattern pattern, String prefix) {
+    private void grep(BufferedReader br, PrintWriter pw, String prefix) {
         String line = null;
         try {
+            int countMatches = 0;
             while ((line = br.readLine()) != null) {
-                if (pattern.matcher(line).matches()) {
-                    pw.println(prefix + line);
+                if (pattern.matcher(line).matches() ^ invertMatch) {
+                    countMatches += 1;
+                    if (!this.count) {
+                        pw.println(prefix + line);
+                    }
                 }
+            }
+            
+            if (this.count) {
+                pw.println(prefix + countMatches);
             }
         } catch (IOException e) {
             System.err.println(prefix + " Error occurs when reading.");
@@ -249,13 +263,13 @@ public class Grep {
         
         if (fileList.isEmpty()) {
             br = new BufferedReader(new InputStreamReader(System.in));
-            Grep.grep(br, pw, this.pattern, "");
+            grep(br, pw, "");
         } else {
             for (String fileName : fileList) {
                 String prefix = fileName + ":";
                 try {
                     br = new BufferedReader(new FileReader(fileName));
-                    Grep.grep(br, pw, this.pattern, prefix);
+                    grep(br, pw, prefix);
                     br.close();
                 } catch (FileNotFoundException e) {
                     System.err.println(prefix + " No such file.");
