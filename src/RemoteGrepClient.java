@@ -3,8 +3,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import org.apache.commons.cli.ParseException;
+import org.json.simple.JSONValue;
 
 /**
  * RemoteGrepClient is a client program which sends `grep' command to servers,
@@ -49,9 +53,13 @@ public class RemoteGrepClient {
             try (PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
                     BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
                 // Notice: A tricky detail here.
-                // Use json to send args
-                // TODO
-                pw.println("grep " + String.join(" ", args) + " " + Catalog.getLogDirectory());
+                // send String array using json format
+                // In case String has quote or space
+                List<String> argList = new ArrayList<>();
+                argList.add("grep");
+                argList.addAll(Arrays.asList(args));
+                String jsonText = JSONValue.toJSONString(argList);
+                pw.println(jsonText);
 
                 String matchedLine = null;
                 while ((matchedLine = br.readLine()) != null) {

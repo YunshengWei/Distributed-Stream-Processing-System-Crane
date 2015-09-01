@@ -234,6 +234,7 @@ public class Grep {
         
         this.invertMatch = cmd.hasOption("invert-match");
         this.count = cmd.hasOption("count");
+        
     }
     
     private void grep(BufferedReader br, PrintWriter pw, String prefix) {

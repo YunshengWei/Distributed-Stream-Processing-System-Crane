@@ -7,6 +7,8 @@ import java.net.Socket;
 import java.util.Arrays;
 
 import org.apache.commons.cli.ParseException;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONValue;
 
 public class Server {
     private final ServerSocket serverSocket;
@@ -28,7 +30,9 @@ public class Server {
                     // since we are only allowed to be contacted by
                     // client programs, and any mistakes should be detected
                     // there.
-                    String[] cmd = line.split("\\s+");
+                    JSONArray array = (JSONArray) JSONValue.parse(line);
+                    @SuppressWarnings("unchecked")
+                    String[] cmd = (String[]) array.toArray(new String[0]);
                     switch (cmd[0]) {
                     case "grep":
                         String[] args = Arrays.copyOfRange(cmd, 1, cmd.length);
