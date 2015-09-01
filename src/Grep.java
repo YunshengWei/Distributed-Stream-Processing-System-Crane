@@ -21,24 +21,22 @@ public class Grep {
     
     private final OutputStream os;
     private final Pattern pattern;
-    private final boolean invertMatch;
-    private final boolean count;
+    private final boolean invertMatchToggle;
+    private final boolean countToggle;
+    private final boolean lineNumberToggle;
     private final List<String> fileList;
     
     /**
-     * Print help message of Grep to stdout.
+     * Print a long help message to stderr.
      */
     public static void printHelp() {
-        //TODO
+        // TODO delete unsupported options
         HelpFormatter formatter = new HelpFormatter();
-        formatter.printHelp("grep", Grep.OPTIONS);
-    }
-    
-    /**
-     * Print usage of Grep to Stdout.
-     */
-    public static void printUsage() {
-        //TODO
+        String cmdLineSyntax = "java Grep [-e pattern] [-f file] [pattern] [file ...]";
+        String header = String.format("%n%s", "The following options are available:");
+        String footer = "See `man grep' for more details.";
+        formatter.printHelp(new PrintWriter(System.err, true), 74, 
+                cmdLineSyntax, header, Grep.OPTIONS, 1, 3, footer);
     }
     
     private static Options buildGrepOptions() {
@@ -49,11 +47,10 @@ public class Grep {
     }
     
     private static void addBooleanOptions(Options options) {
-        options.addOption("a", "text", false, 
-                "Treat all files as ASCII text.  Normally grep will simply print "
-              + "``Binary file ... matches'' if files contain binary characters.  "
-              + "Use of this option forces grep to output lines matching the spec"
-              + "ified pattern.");
+        // "--help" option only has effect in commandline mode, 
+        // it is ignored in API mode.
+        options.addOption(null, "help", false, 
+                "Print this help message.");
         options.addOption("b", "byte-offset", false,
                 "The offset in bytes of a matched pattern is displayed in front of "
               + "the respective matched line.");
@@ -117,35 +114,16 @@ public class Grep {
               + "file, starting at line 1.  The line number counter is reset for "
               + "each file processed.  This option is ignored if -c, -L, -l, or -q "
               + "is specified.");
-        options.addOption(null, "null", false,
-                "Prints a zero-byte after the file name.");
-        options.addOption("O", false, 
-                "If -R is specified, follow symbolic links only if they were "
-              + "explicitly listed on the command line.  The default is not to "
-              + "follow symbolic links.");
         options.addOption("o", "only-matching", false, 
                 "Prints only the matching part of the lines.");
-        options.addOption("p", false,
-                "If -R is specified, no symbolic links are followed.  This is the "
-              + "default.");
         options.addOption("q", "quiet", false,
                 "Quiet mode: suppress normal output.  grep will only search a file "
               + "until a match has been found, making searches potentially less "
               + "expensive.");
         options.addOption(null, "silent", false, "See --quiet.");
-        options.addOption("r", "recursive", false,
-                "Recursively search subdirectories listed.");
-        options.addOption("R", false, "See -r.");
-        options.addOption("S", false,
-                "If -R is specified, all symbolic links are followed.  The default "
-              + "is not to follow symbolic links.");
         options.addOption("s", "no-messages", false,
                 "Silent mode.  Nonexistent and unreadable files are ignored (i.e. "
               + "their error messages are suppressed).");
-        options.addOption("U", "binary", false, 
-                "Search binary files, but do not attempt to print them.");
-        options.addOption("V", "version", false,
-                "Display version information and exit.");
         options.addOption("v", "invert-match", false,
                 "Selected lines are those not matching any of the specified pat"
               + "terns.");
@@ -155,9 +133,6 @@ public class Grep {
         options.addOption("x", "line-regexp", false,
                 "Only input lines selected against an entire fixed string or regu"
               + "lar expression are considered to be matching lines.");
-        options.addOption("Z", "decompress", false,
-                "Force grep to behave as zgrep.");
-        options.addOption("z", false, "See -Z.");
         options.addOption(null, "line-buffered", false,
                 "Force output to be line buffered.  By default, output is line "
               + "buffered when standard output is a terminal and block buffered"
@@ -179,14 +154,6 @@ public class Grep {
                       + "each match.  The default is 2 and is equivalent to -A 2 -B "
                       + "2.  Note: no whitespace may be given between the option and"
                       + "its argument.").build());
-        options.addOption(Option.builder("d").longOpt("directories")
-                .hasArg().argName("action").desc(
-                        "Specify the demanded action for directories.  It is `read' "
-                      + "by default, which means that the directories are read in the "
-                      + "same manner as normal files.  Other possible values are "
-                      + "`skip' to silently ignore the directories, and `recurse' to "
-                      + "read them recursively, which has the same effect as the -R "
-                      + "and -r option.").build());
         options.addOption(Option.builder("e").longOpt("regexp")
                 .hasArg().argName("pattern").desc(
                         "Specify a pattern used during the search of the input: an "
@@ -201,56 +168,83 @@ public class Grep {
     
     /**
      * Construct Grep from specified options and will output matched lines to
-     * the specified output.
+     * the specified output. Grep only search files and do not search
+     * subdirectories.
      * 
-     * @param args
+     * @param options
      *            options for Grep.
      * @param os
      *            the OutputStream to which matched lines should be write to.
      * @throws ParseException
      *             if any of the specified options is not valid.
      */
-    public Grep(String[] args, OutputStream os) throws ParseException {
-        this.os = os;
-        CommandLineParser parser = new DefaultParser();
-        CommandLine cmd = parser.parse(Grep.OPTIONS, args);
-        List<String> argList = cmd.getArgList();
-        
-        String[] regexps = cmd.getOptionValues("e");
-        String regexp;
-        if (regexps != null) {
-            regexp = ".*(" + String.join("|", regexps) + ").*";
-            this.fileList = argList;
-        } else {
-            regexp = ".*(" + argList.get(0) + ").*";
-            this.fileList = argList.subList(1, argList.size());
+    public Grep(String[] options, OutputStream os) throws ParseException {
+        try {
+            this.os = os;
+            CommandLineParser parser = new DefaultParser();
+            CommandLine cmd = parser.parse(Grep.OPTIONS, options);
+            List<String> argList = cmd.getArgList();
+
+            String[] regexps = cmd.getOptionValues("e");
+            String regexp;
+            if (regexps != null) {
+                regexp = ".*(" + String.join("|", regexps) + ").*";
+                this.fileList = argList;
+            } else {
+                regexp = ".*(" + argList.get(0) + ").*";
+                this.fileList = argList.subList(1, argList.size());
+            }
+
+            if (cmd.hasOption("ignore-case")) {
+                this.pattern = Pattern.compile(regexp, Pattern.CASE_INSENSITIVE);
+            } else {
+                this.pattern = Pattern.compile(regexp);
+            }
+
+            this.invertMatchToggle = cmd.hasOption("invert-match");
+            this.countToggle = cmd.hasOption("count");
+            this.lineNumberToggle = cmd.hasOption("line-number");
+        } catch (Exception e) {
+            throw new ParseException(e.getMessage());
         }
-        
-        if (cmd.hasOption("ignore-case")) {
-            this.pattern = Pattern.compile(regexp, Pattern.CASE_INSENSITIVE);
-        } else {
-            this.pattern = Pattern.compile(regexp);
-        }
-        
-        this.invertMatch = cmd.hasOption("invert-match");
-        this.count = cmd.hasOption("count");
-        
     }
+    
+    /**
+     * @return the concatenation of all patterns.
+     */
+    public String getPattern() {
+        return this.pattern.toString();
+    }
+    
+    /**
+     * @return the file parts in the options
+     */
+    public List<String> getFileList() {
+        return this.fileList;
+    }
+    
+    
     
     private void grep(BufferedReader br, PrintWriter pw, String prefix) {
         String line = null;
         try {
             int countMatches = 0;
+            int lineNumber = 1;
             while ((line = br.readLine()) != null) {
-                if (pattern.matcher(line).matches() ^ invertMatch) {
+                if (pattern.matcher(line).matches() ^ invertMatchToggle) {
                     countMatches += 1;
-                    if (!this.count) {
-                        pw.println(prefix + line);
+                    if (!this.countToggle) {
+                        if (this.lineNumberToggle) {
+                            pw.println(String.format("%s%s:%s", prefix, lineNumber, line));
+                        } else {
+                            pw.println(prefix + line);
+                        }
                     }
                 }
+                lineNumber++;
             }
             
-            if (this.count) {
+            if (this.countToggle) {
                 pw.println(prefix + countMatches);
             }
         } catch (IOException e) {

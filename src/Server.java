@@ -40,6 +40,7 @@ public class Server {
                     default:
                         // Should never reach here.
                         System.err.println(String.format("Unsupported Operation：%s.", cmd.get(0)));
+                        return;
                     }
                 }
             } catch (IOException | ParseException e) {

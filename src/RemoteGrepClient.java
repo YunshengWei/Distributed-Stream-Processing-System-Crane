@@ -12,8 +12,10 @@ import org.json.simple.JSONValue;
 
 /**
  * RemoteGrepClient is a client program which sends `grep' command to servers,
- * and output matched lines received from servers to standard output. The
- * command options is the same as Grep.
+ * and output matched lines received from servers to standard output. The usage
+ * of RemoteGrepClient is exactly the same as Grep, except that at least one
+ * file should be given (i.e. cannot read from standard input, which does not
+ * make sense in distributed settings).
  */
 public class RemoteGrepClient {
 
@@ -29,7 +31,7 @@ public class RemoteGrepClient {
         /**
          * Attempt to connect the specified host.
          * 
-         * @return the connected socket if succeed, null otherwise.
+         * @return the connected socket if succeed, <code>null</code> otherwise.
          */
         private Socket connect() {
             try {
@@ -97,16 +99,18 @@ public class RemoteGrepClient {
         // args errors are detected here,
         // so no invalid commands will be sent to other servers.
         try {
-            // TODO
-            // maybe refactor grep for validity check and option parsing?
             Grep grep = new Grep(args, null);
+            if (grep.getFileList().isEmpty()) {
+                System.out.print("RemoteGrepClient requires at least one file as arguments.");
+                System.exit(-1);
+            }
 
             for (Catalog.Host host : Catalog.getHosts()) {
                 new Thread(new QueryThread(host, args)).start();
             }
         } catch (ParseException e) {
             System.err.println("Invalid argument.");
-            Grep.printUsage();
+            Grep.printHelp();
             System.exit(-1);
         }
     }
