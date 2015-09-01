@@ -97,6 +97,8 @@ public class RemoteGrepClient {
         // args errors are detected here,
         // so no invalid commands will be sent to other servers.
         try {
+            // TODO
+            // maybe refactor grep for validity check and option parsing?
             Grep grep = new Grep(args, null);
 
             for (Catalog.Host host : Catalog.getHosts()) {

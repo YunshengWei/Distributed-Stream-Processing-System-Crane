@@ -30,17 +30,16 @@ public class Server {
                     // since we are only allowed to be contacted by
                     // client programs, and any mistakes should be detected
                     // there.
-                    JSONArray array = (JSONArray) JSONValue.parse(line);
-                    @SuppressWarnings("unchecked")
-                    String[] cmd = (String[]) array.toArray(new String[0]);
-                    switch (cmd[0]) {
+                    JSONArray cmd = (JSONArray) JSONValue.parse(line);
+                    switch ((String) cmd.get(0)) {
                     case "grep":
-                        String[] args = Arrays.copyOfRange(cmd, 1, cmd.length);
+                        @SuppressWarnings("unchecked")
+                        String[] args = (String[]) cmd.subList(1, cmd.size()).toArray(new String[0]);;
                         new Grep(args, os).execute();
                         return;
                     default:
                         // Should never reach here.
-                        System.err.println(String.format("Unsupported Operation：%s.", cmd[0]));
+                        System.err.println(String.format("Unsupported Operation：%s.", cmd.get(0)));
                     }
                 }
             } catch (IOException | ParseException e) {
