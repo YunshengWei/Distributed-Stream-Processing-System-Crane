@@ -1,19 +1,25 @@
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Catalog stores system information.
+ * Catalog stores information about the whole system.
  */
 public class Catalog {
+
+    /**
+     * Host stores information about a host, including host name, IP address,
+     * and port number.
+     */
     public static class Host {
         private final String IP;
         private final int portNumber;
         private final String hostName;
 
-        public Host(String IP, int portNumber, String hostName) {
+        public Host(String hostName, String IP, int portNumber) {
             this.IP = IP;
             this.portNumber = portNumber;
             this.hostName = hostName;
@@ -33,27 +39,52 @@ public class Catalog {
 
         @Override
         public String toString() {
-            return String.format("%s(%s:%s)", hostName, IP, portNumber);
+            return String.format("<%s[%s:%s]>", hostName, IP, portNumber);
         }
     }
 
+    /** the directory where log files are stored */
     private static final String LOGDIR = "log/iamlogfile";
-    private static final List<Host> hostList;
-    private static final Map<String, Host> hostNameMap;
+    /** the path of the file which keeps host information */
+    private static final String HOST_FILE_PATH = "conf/host_list";
 
-    // Modify here to hard code hosts information
-    static {
-        Host host1 = new Host("127.0.0.1", 60001, "machine1");
-        Host host2 = new Host("127.0.0.1", 60002, "machine2");
-        //Host host3 = new Host("127.0.0.1", 40000, "machine3");
-        //Host host4 = new Host("127.0.0.1", 40000, "machine4");
-        //Host host5 = new Host("127.0.0.1", 40000, "machine5");
-        hostList = Arrays.asList(host1, host2);//, host3, host4, host5);
+    private static final List<Host> hostList = buildHostList();
+    private static final Map<String, Host> hostNameMap = buildHostNameMap();
 
-        hostNameMap = new HashMap<>();
-        for (Host host : hostList) {
-            hostNameMap.put(host.hostName, host);
+    /** Build host list from file */
+    private static List<Host> buildHostList() {
+        try (BufferedReader br = new BufferedReader(new FileReader(Catalog.HOST_FILE_PATH))) {
+
+            List<Host> hostList = new ArrayList<>();
+            // the first line is description, just skip it
+            br.readLine();
+            String line = null;
+
+            while ((line = br.readLine()) != null) {
+                String[] words = line.split("\\s+");
+                // the format should be in this order:
+                // <host name> <IP address> <port number>
+                String hostName = words[0];
+                String IP = words[1];
+                int portNumber = Integer.parseInt(words[2]);
+                hostList.add(new Host(hostName, IP, portNumber));
+            }
+
+            return hostList;
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(-1);
         }
+        return null;
+    }
+
+    /** Build the mapping between host name and host object */
+    private static Map<String, Host> buildHostNameMap() {
+        Map<String, Host> hostNameMap = new HashMap<>();
+        for (Host host : hostList) {
+            hostNameMap.put(host.getHostName(), host);
+        }
+        return hostNameMap;
     }
 
     public static List<Host> getHosts() {
@@ -70,5 +101,11 @@ public class Catalog {
 
     public static String getLogDirectory() {
         return LOGDIR;
+    }
+
+    // unit test
+    public static void main(String[] args) {
+        System.out.println(hostList);
+        System.out.println(getNumHosts());
     }
 }
