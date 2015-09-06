@@ -44,7 +44,7 @@ public class Catalog {
     }
 
     /** the directory where log files are stored */
-    private static final String LOGDIR = "log/iamlogfile";
+    private static final String LOGDIR = "log";
     /** the path of the file which keeps host information */
     private static final String HOST_FILE_PATH = "conf/host_list";
 
@@ -61,6 +61,10 @@ public class Catalog {
             String line = null;
 
             while ((line = br.readLine()) != null) {
+                if (line.trim().length() == 0) {
+                    continue;
+                }
+                
                 String[] words = line.split("\\s+");
                 // the format should be in this order:
                 // <host name> <IP address> <port number>
