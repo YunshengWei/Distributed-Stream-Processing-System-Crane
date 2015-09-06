@@ -36,10 +36,10 @@ public class RemoteGrepClient {
         private Socket connect() {
             try {
                 Socket socket = new Socket(host.getIP(), host.getPortNumber());
-                System.err.println(String.format("%s: Connection set up successfully.", host));
+                System.err.println(String.format("%s: Connection set up successfully.", host.getHostName()));
                 return socket;
             } catch (IOException e) {
-                System.err.println(String.format("%s: Failed to establish connection.", host));
+                System.err.println(String.format("%s: Failed to establish connection.", host.getHostName()));
             }
             return null;
         }
@@ -65,10 +65,10 @@ public class RemoteGrepClient {
 
                 String matchedLine = null;
                 while ((matchedLine = br.readLine()) != null) {
-                    System.out.println(String.format("%s:%s", host, matchedLine));
+                    System.out.println(String.format("%s:%s", host.getHostName(), matchedLine));
                 }
             } catch (IOException e) {
-                System.err.println(String.format("%s: %s", host, e.getMessage()));
+                System.err.println(String.format("%s: %s", host.getHostName(), e.getMessage()));
             }
         }
 
@@ -80,7 +80,7 @@ public class RemoteGrepClient {
                 socket.close();
             } catch (IOException e) {
             } finally {
-                System.err.println(String.format("%s: Connection closed", host));
+                System.err.println(String.format("%s: Connection closed", host.getHostName()));
             }
         }
 
