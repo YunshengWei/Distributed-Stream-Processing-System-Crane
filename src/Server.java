@@ -8,6 +8,9 @@ import java.net.Socket;
 import org.apache.commons.cli.ParseException;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONValue;
+/** This is the main class for Server. ServerThread is a thread 
+ * within the Server.Its main task is to take the socket,bind and listen on it. 
+ * It also calls execute function of Grep class to run grep functionality. **/
 
 public class Server {
     private final ServerSocket serverSocket;
