@@ -100,8 +100,9 @@ public class RemoteGrepClient {
         // so no invalid commands will be sent to other servers.
         try {
             Grep grep = new Grep(args, null);
-            if (grep.getFileList().isEmpty()) {
-                System.out.print("RemoteGrepClient requires at least one file as arguments.");
+            
+            if (grep.getFileNamePatterns().isEmpty()) {
+                System.err.println("RemoteGrepClient requires at least one file as arguments.");
                 System.exit(-1);
             }
 
@@ -109,7 +110,7 @@ public class RemoteGrepClient {
                 new Thread(new QueryThread(host, args)).start();
             }
         } catch (ParseException e) {
-            System.err.println("Invalid argument.");
+            System.err.println(e.getMessage());
             Grep.printHelp();
             System.exit(-1);
         }

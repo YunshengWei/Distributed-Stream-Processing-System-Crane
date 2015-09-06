@@ -75,6 +75,8 @@ public class Catalog {
             e.printStackTrace();
             System.exit(-1);
         }
+        
+        // Should never reach here.
         return null;
     }
 
