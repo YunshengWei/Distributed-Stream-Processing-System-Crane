@@ -38,7 +38,7 @@ public class Server {
                         return;
                     default:
                         // Should never reach here.
-                        System.err.println(String.format("Unsupported Operation：%s.", cmd.get(0)));
+                        System.err.println(String.format("Unsupported Operation: %s.", cmd.get(0)));
                         return;
                     }
                 }
