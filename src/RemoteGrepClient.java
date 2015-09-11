@@ -36,7 +36,7 @@ public class RemoteGrepClient {
         private Socket connect() {
             try {
                 Socket socket = new Socket(host.getIP(), host.getPortNumber());
-                System.out.println(String.format("%s: Connection set up successfully.", host.getHostName()));
+                System.err.println(String.format("%s: Connection set up successfully.", host.getHostName()));
                 return socket;
             } catch (IOException e) {
                 System.err.println(String.format("%s: Failed to establish connection.", host.getHostName()));
