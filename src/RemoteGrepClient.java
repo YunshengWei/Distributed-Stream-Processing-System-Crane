@@ -89,8 +89,13 @@ public class RemoteGrepClient {
             Socket socket = connect();
 
             if (socket != null) {
+                long startTime = System.nanoTime();
+                
                 executeQuery(socket);
                 close(socket);
+                
+                long duration = System.nanoTime() - startTime;
+                System.err.println(String.format("%s: Elapsed time: %ss", host.getHostName(), duration));
             }
         }
     }
