@@ -1,8 +1,6 @@
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -11,6 +9,7 @@ import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 import java.util.regex.Pattern;
 
 import org.apache.commons.cli.CommandLine;
@@ -54,7 +53,7 @@ public class Grep {
     public static void printUsage() {
         System.err.println("usage: java Grep [-cinvwx] [-e pattern] [-m num] [pattern] [file ...]");
     }
-    
+
     private static Options buildGrepOptions() {
         Options options = new Options();
         Grep.addBooleanOptions(options);
@@ -104,7 +103,7 @@ public class Grep {
             this.os = os;
             CommandLineParser parser = new DefaultParser();
             this.cmd = parser.parse(Grep.OPTIONS, options);
-            
+
             List<String> argList = cmd.getArgList();
 
             String[] regexps = cmd.getOptionValues("e");
@@ -117,20 +116,24 @@ public class Grep {
                 this.fileNamePatterns = argList.subList(1, argList.size());
             }
 
+            int flags = 0;
+
             if (cmd.hasOption("word-regexp")) {
                 regexp = "\\b" + regexp + "\\b";
             }
             if (cmd.hasOption("line-regexp")) {
                 regexp = "^" + regexp + "$";
             } else {
+                // Very very tricky here!
+                // by default, . does not match newline including \r, \n, etc.
                 regexp = ".*" + regexp + ".*";
+                flags |= Pattern.UNIX_LINES;
             }
-
             if (cmd.hasOption("ignore-case")) {
-                this.pattern = Pattern.compile(regexp, Pattern.CASE_INSENSITIVE);
-            } else {
-                this.pattern = Pattern.compile(regexp);
+                flags |= Pattern.CASE_INSENSITIVE;
             }
+            
+            this.pattern = Pattern.compile(regexp, flags);
 
             this.invertMatchToggle = cmd.hasOption("invert-match");
             this.countToggle = cmd.hasOption("count");
@@ -141,7 +144,7 @@ public class Grep {
             } else {
                 this.maxCount = Integer.MAX_VALUE;
             }
-            
+
         } catch (NumberFormatException e) {
             throw new ParseException("grep: Invalid arguement");
         } catch (IndexOutOfBoundsException e) {
@@ -172,35 +175,31 @@ public class Grep {
         return this.cmd;
     }
 
-    private void grep(BufferedReader br, PrintWriter pw, String prefix) {
-        String line = null;
-        try {
-            int countMatches = 0;
-            int lineNumber = 1;
-            while ((line = br.readLine()) != null) {
-                if (pattern.matcher(line).matches() ^ invertMatchToggle) {
-                    countMatches += 1;
-                    currentCount += 1;
-                    if (!this.countToggle) {
-                        if (this.lineNumberToggle) {
-                            pw.println(String.format("%s%s:%s", prefix, lineNumber, line));
-                        } else {
-                            pw.println(prefix + line);
-                        }
-                    }
-                    
-                    if (currentCount >= this.maxCount) {
-                        return;
+    private void grep(Scanner sc, PrintWriter pw, String prefix) {
+        int countMatches = 0;
+        int lineNumber = 1;
+        while (sc.hasNext()) {
+            String line = sc.next();
+            if (pattern.matcher(line).matches() ^ invertMatchToggle) {
+                countMatches += 1;
+                currentCount += 1;
+                if (!this.countToggle) {
+                    if (this.lineNumberToggle) {
+                        pw.println(String.format("%s%s:%s", prefix, lineNumber, line));
+                    } else {
+                        pw.println(prefix + line);
                     }
                 }
-                lineNumber++;
-            }
 
-            if (this.countToggle) {
-                pw.println(prefix + countMatches);
+                if (currentCount >= this.maxCount) {
+                    return;
+                }
             }
-        } catch (IOException e) {
-            System.err.println("grep: " + prefix + " Errors occur when reading");
+            lineNumber++;
+        }
+
+        if (this.countToggle) {
+            pw.println(prefix + countMatches);
         }
     }
 
@@ -250,28 +249,30 @@ public class Grep {
 
     public void execute() {
         PrintWriter pw = new PrintWriter(os, true);
-        BufferedReader br;
+        // Use Scanner instead of BufferedReader.
+        // Because Scanner can specify delimiter which BufferedReader cannot.
+        // BufferedReader will use \r as a delimiter, which is not what we want.
+        Scanner sc;
 
         if (fileNamePatterns.isEmpty()) {
-            br = new BufferedReader(new InputStreamReader(System.in));
-            grep(br, pw, "");
+            sc = new Scanner(new InputStreamReader(System.in)).useDelimiter("\\n|\\r\\n");
+            grep(sc, pw, "");
         } else {
             List<String> targetFiles = Grep.getTargetFiles(fileNamePatterns);
-            
+
             for (String fileName : targetFiles) {
                 String prefix = fileName + ":";
                 try {
-                    br = new BufferedReader(new FileReader(fileName));
-                    grep(br, pw, prefix);
+                    sc = new Scanner(new FileReader(fileName));
+                    sc.useDelimiter("\\n|\\r\\n");
+                    grep(sc, pw, prefix);
+                    sc.close();
+
                     if (this.currentCount >= this.maxCount) {
                         return;
                     }
-                    br.close();
                 } catch (FileNotFoundException e) {
-                    // Should never reach here!
-                    System.err.println("grep: +" + prefix + " No such file");
-                } catch (IOException e) {
-                    System.err.println("grep: " + prefix + " Errors occur when closing");
+                    System.err.println("grep: +" + prefix + " No such file or directory");
                 }
             }
         }

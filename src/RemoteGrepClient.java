@@ -95,7 +95,7 @@ public class RemoteGrepClient {
                 close(socket);
                 
                 long duration = System.nanoTime() - startTime;
-                System.err.println(String.format("%s: Elapsed time: %ss", host.getHostName(), duration));
+                System.err.println(String.format("%s: Elapsed time: %ss", host.getHostName(), duration / 1000000000.));
             }
         }
     }
