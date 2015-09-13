@@ -4,7 +4,26 @@ We will build a distributed stream processing system in 4 stages.
 
 Stage 1:
 Distributed Log Querier
-TODO: add description for stage 1.
+
+Usage is described as following:
+1. First make sure JDK 8 is installed and $PATH and $CLASSPATH is set correctly, if not, type: 
+	make install
+to install JDK 8 and set $PATH and CLASSPATH
+($CLASSPATH should include all jars in lib/ and bin/)
+
+2. To compile, type:
+	make compile
+
+3. To run server, type:
+	java Server <portNumber>
+
+4. To run local Grep, type:
+	java Grep [-options] [pattern] [file ...]
+
+4. To run distributed grep client, type:
+	java RemoteGrepClient [-options] [pattern] [file ...]
+Notice, if file includes wildcard, then it should be enclosed by "" or '' to prevent it from expanded locally. Control information and matched lines are respectively written to stderr and stdout. So it is convenient to redirect IO to split them. :)
+
 
 Stage 2:
 TODO:
