@@ -20,9 +20,11 @@ to install JDK 8 and set $PATH and CLASSPATH
 4. To run local Grep, type:
 	java Grep [-options] [pattern] [file ...]
 
-4. To run distributed grep client, type:
+5. To run distributed grep client, type:
 	java RemoteGrepClient [-options] [pattern] [file ...]
 Notice, if file includes wildcard, then it should be enclosed by "" or '' to prevent it from expanded locally. Control information and matched lines are respectively written to stderr and stdout. So it is convenient to redirect IO to split them. :)
+
+6. Server information is stored in conf/host_list
 
 
 Stage 2:
