@@ -73,8 +73,6 @@ public class TestUtil {
                 String line2 = sc2.next();
 
                 if (!line1.equals(line2)) {
-                    System.out.println(line1);
-                    System.out.println(line2);
                     return false;
                 }
             }
