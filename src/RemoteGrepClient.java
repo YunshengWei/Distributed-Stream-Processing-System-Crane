@@ -1,4 +1,3 @@
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -6,6 +5,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Scanner;
 
 import org.apache.commons.cli.ParseException;
 import org.json.simple.JSONValue;
@@ -52,10 +52,13 @@ public class RemoteGrepClient {
          *            requires the socket not null and open.
          */
         private void executeQuery(Socket socket) {
+            // Use scanner instead of BufferedReader to avoid insidious Carriage
+            // Return problems
             try (PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
-                    BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+                    Scanner sc = new Scanner(new InputStreamReader(socket.getInputStream()))
+                            .useDelimiter("\\n|\\r\\n")) {
                 // Notice: A tricky detail here.
-                // send String array using json format
+                // send String array using JSON format
                 // In case String has quote or space
                 List<String> argList = new ArrayList<>();
                 argList.add("grep");
@@ -63,8 +66,8 @@ public class RemoteGrepClient {
                 String jsonText = JSONValue.toJSONString(argList);
                 pw.println(jsonText);
 
-                String matchedLine = null;
-                while ((matchedLine = br.readLine()) != null) {
+                while (sc.hasNext()) {
+                    String matchedLine = sc.next();
                     System.out.println(String.format("%s:%s", host.getHostName(), matchedLine));
                 }
             } catch (IOException e) {
@@ -90,10 +93,10 @@ public class RemoteGrepClient {
 
             if (socket != null) {
                 long startTime = System.nanoTime();
-                
+
                 executeQuery(socket);
                 close(socket);
-                
+
                 long duration = System.nanoTime() - startTime;
                 System.err.println(String.format("%s: Elapsed time: %ss", host.getHostName(), duration / 1000000000.));
             }
@@ -105,7 +108,7 @@ public class RemoteGrepClient {
         // so no invalid commands will be sent to other servers.
         try {
             Grep grep = new Grep(args, null);
-            
+
             if (grep.getFileNamePatterns().isEmpty()) {
                 System.err.println("RemoteGrepClient requires at least one file as arguments.");
                 System.exit(-1);
