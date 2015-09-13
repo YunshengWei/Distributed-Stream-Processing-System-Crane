@@ -27,6 +27,7 @@ public class TestUtil {
 
         // Use Scanner rather than BufferedReader
         try (Scanner sc = new Scanner(new FileReader(file))) {
+            sc.useDelimiter("\\n|\\r\\n");
             Map<Integer, List<String>> machineLines = new HashMap<>();
 
             while (sc.hasNext()) {
@@ -63,12 +64,16 @@ public class TestUtil {
      */
     public static boolean compareTwoFiles(Readable source1, Readable source2) throws FileNotFoundException {
         try (Scanner sc1 = new Scanner(source1); Scanner sc2 = new Scanner(source2)) {
-
+            
+            sc1.useDelimiter("\\n|\\r\\n");
+            sc2.useDelimiter("\\n|\\r\\n");
             while (sc1.hasNext() && sc2.hasNext()) {
                 String line1 = sc1.next();
                 String line2 = sc2.next();
 
                 if (!line1.equals(line2)) {
+                    System.out.println(line1);
+                    System.out.println(line2);
                     return false;
                 }
             }
