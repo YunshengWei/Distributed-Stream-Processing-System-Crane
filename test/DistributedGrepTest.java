@@ -1,5 +1,7 @@
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -31,7 +33,7 @@ public class DistributedGrepTest {
         }
         StringReader sr1 = new StringReader(sw1.toString());
         
-        Scanner sc = new Scanner(new File("grepResult"));
+        Scanner sc = new Scanner(new InputStreamReader(new FileInputStream("grepResult"), Catalog.encoding));
         sc.useDelimiter("\\n|\\r\\n");
         StringWriter sw2 = new StringWriter();
         pw = new PrintWriter(sw2, true);

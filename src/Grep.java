@@ -1,9 +1,11 @@
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.nio.file.FileSystems;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
@@ -132,7 +134,7 @@ public class Grep {
             if (cmd.hasOption("ignore-case")) {
                 flags |= Pattern.CASE_INSENSITIVE;
             }
-            
+
             this.pattern = Pattern.compile(regexp, flags);
 
             this.invertMatchToggle = cmd.hasOption("invert-match");
@@ -248,22 +250,34 @@ public class Grep {
     }
 
     public void execute() {
-        PrintWriter pw = new PrintWriter(os, true);
+        PrintWriter pw;
+        try {
+            pw = new PrintWriter(new OutputStreamWriter(os, Catalog.encoding), true);
+        } catch (UnsupportedEncodingException e1) {
+            e1.printStackTrace();
+            return;
+        }
         // Use Scanner instead of BufferedReader.
         // Because Scanner can specify delimiter which BufferedReader cannot.
         // BufferedReader will use \r as a delimiter, which is not what we want.
         Scanner sc;
 
         if (fileNamePatterns.isEmpty()) {
-            sc = new Scanner(new InputStreamReader(System.in)).useDelimiter("\\n|\\r\\n");
-            grep(sc, pw, "");
+            try {
+                sc = new Scanner(new InputStreamReader(System.in, Catalog.encoding));
+                sc.useDelimiter("\\n|\\r\\n");
+                grep(sc, pw, "");
+            } catch (UnsupportedEncodingException e) {
+                // Should never reach here
+                e.printStackTrace();
+            }
         } else {
             List<String> targetFiles = Grep.getTargetFiles(fileNamePatterns);
 
             for (String fileName : targetFiles) {
                 String prefix = fileName + ":";
                 try {
-                    sc = new Scanner(new FileReader(fileName));
+                    sc = new Scanner(new InputStreamReader(new FileInputStream(fileName), Catalog.encoding));
                     sc.useDelimiter("\\n|\\r\\n");
                     grep(sc, pw, prefix);
                     sc.close();
@@ -273,6 +287,9 @@ public class Grep {
                     }
                 } catch (FileNotFoundException e) {
                     System.err.println("grep: +" + prefix + " No such file or directory");
+                } catch (UnsupportedEncodingException e) {
+                    // Should never reach here
+                    e.printStackTrace();
                 }
             }
         }

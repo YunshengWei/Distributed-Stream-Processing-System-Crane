@@ -50,6 +50,9 @@ public class Catalog {
 
     private static final List<Host> hostList = buildHostList();
     private static final Map<String, Host> hostNameMap = buildHostNameMap();
+    
+    /** Specify the character encoding used by the whole system */
+    public static final String encoding = "UTF-8";
 
     /** Build host list from file */
     private static List<Host> buildHostList() {

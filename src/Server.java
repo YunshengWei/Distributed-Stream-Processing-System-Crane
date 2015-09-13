@@ -9,7 +9,6 @@ import org.apache.commons.cli.ParseException;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONValue;
 
-
 /**
  * This is the main class for Server. ServerThread is a thread within the
  * Server.Its main task is to take the socket, bind and listen on it. It also
@@ -28,7 +27,8 @@ public class Server {
 
         @Override
         public void run() {
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            try (BufferedReader br = new BufferedReader(
+                    new InputStreamReader(socket.getInputStream(), Catalog.encoding));
                     OutputStream os = socket.getOutputStream()) {
                 String line;
                 while ((line = br.readLine()) != null) {

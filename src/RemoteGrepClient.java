@@ -1,5 +1,6 @@
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -54,8 +55,9 @@ public class RemoteGrepClient {
         private void executeQuery(Socket socket) {
             // Use scanner instead of BufferedReader to avoid insidious Carriage
             // Return problems
-            try (PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
-                    Scanner sc = new Scanner(new InputStreamReader(socket.getInputStream()))
+            try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), Catalog.encoding),
+                    true);
+                    Scanner sc = new Scanner(new InputStreamReader(socket.getInputStream(), Catalog.encoding))
                             .useDelimiter("\\n|\\r\\n")) {
                 // Notice: A tricky detail here.
                 // send String array using JSON format

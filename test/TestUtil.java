@@ -1,7 +1,8 @@
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -26,7 +27,7 @@ public class TestUtil {
         List<String> lines = new ArrayList<>();
 
         // Use Scanner rather than BufferedReader
-        try (Scanner sc = new Scanner(new FileReader(file))) {
+        try (Scanner sc = new Scanner(new InputStreamReader(new FileInputStream(file), Catalog.encoding))) {
             sc.useDelimiter("\\n|\\r\\n");
             Map<Integer, List<String>> machineLines = new HashMap<>();
 
@@ -64,7 +65,7 @@ public class TestUtil {
      */
     public static boolean compareTwoFiles(Readable source1, Readable source2) throws FileNotFoundException {
         try (Scanner sc1 = new Scanner(source1); Scanner sc2 = new Scanner(source2)) {
-            
+
             sc1.useDelimiter("\\n|\\r\\n");
             sc2.useDelimiter("\\n|\\r\\n");
             while (sc1.hasNext() && sc2.hasNext()) {
