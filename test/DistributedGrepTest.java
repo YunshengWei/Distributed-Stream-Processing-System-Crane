@@ -3,10 +3,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.List;
-import java.util.Scanner;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -32,19 +32,21 @@ public class DistributedGrepTest {
             pw.println(line);
         }
         StringReader sr1 = new StringReader(sw1.toString());
+
+        /*
+         * Scanner sc = new Scanner(new InputStreamReader(new
+         * FileInputStream("grepResult"), Catalog.encoding));
+         * sc.useDelimiter("\\n|\\r\\n"); StringWriter sw2 = new StringWriter();
+         * pw = new PrintWriter(sw2, true); while (sc.hasNext()) { String line =
+         * sc.next(); pw.println(line.substring(line.indexOf(":") + 1)); }
+         * sc.close();
+         * 
+         * StringReader sr2 = new StringReader(sw2.toString());
+         * Assert.assertTrue(TestUtil.compareTwoFiles(sr1, sr2));
+         */
         
-        Scanner sc = new Scanner(new InputStreamReader(new FileInputStream("grepResult"), Catalog.encoding));
-        sc.useDelimiter("\\n|\\r\\n");
-        StringWriter sw2 = new StringWriter();
-        pw = new PrintWriter(sw2, true);
-        while (sc.hasNext()) {
-            String line = sc.next();
-            pw.println(line.substring(line.indexOf(":") + 1));
-        }
-        sc.close();
-        
-        StringReader sr2 = new StringReader(sw2.toString());
-        Assert.assertTrue(TestUtil.compareTwoFiles(sr1, sr2));
+        Reader r = new InputStreamReader(new FileInputStream("grepResult"));
+        Assert.assertTrue(TestUtil.compareTwoFiles(sr1, r));
     }
 
 }
