@@ -20,7 +20,7 @@ public class Catalog {
     public static final int MAX_UDP_PACKET_BYTES = 1000;
     public static final int NUM_LEAVE_GOSSIP = 1;
 
-    public static final String INTRODUCER_ADDRESS = "localhost";
+    public static final String INTRODUCER_ADDRESS = "fa15-cs425-g13-01.cs.illinois.edu";
     public static final int MEMBERSHIP_SERVICE_PORT = 60003;
     
     public static final int LOG_QUERY_SERVICE_PORT = 60001;

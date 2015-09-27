@@ -72,7 +72,9 @@ public class GossipGroupMembershipService implements DaemonService {
         }
         byte[] bytes = baos.toByteArray();
         oos.close();
-
+///
+        System.err.println(ml);
+   ///     
         for (int i = 0; i < count; i++) {
             Address dest = ml.getRandomAliveMember();
             if (dest != null) {

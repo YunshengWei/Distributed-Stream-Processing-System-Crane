@@ -12,12 +12,6 @@ public class Runner {
                 new Address(InetAddress.getByName(Catalog.INTRODUCER_ADDRESS),
                         Catalog.MEMBERSHIP_SERVICE_PORT));
         ggms.startServe();
-        
-        GossipGroupMembershipService ggms2 = GossipGroupMembershipService.create(
-                60004,
-                new Address(InetAddress.getByName(Catalog.INTRODUCER_ADDRESS),
-                        Catalog.MEMBERSHIP_SERVICE_PORT));
-        ggms2.startServe();
 
         Scanner in = new Scanner(System.in);
         String line;
