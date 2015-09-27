@@ -12,7 +12,12 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * GossipGroupMembershipService is a daemon service, which implements gossip
+ * membership protocol.
+ */
 public class GossipGroupMembershipService implements DaemonService {
 
     private class GossipSender implements Runnable {
@@ -20,7 +25,7 @@ public class GossipGroupMembershipService implements DaemonService {
         public void run() {
             try {
                 MembershipList mlToGossip = membershipList.updateAndGetNonFailMembers();
-                GossipGroupMembershipService.gossipMembershipList(mlToGossip, sendSocket, 1);
+                gossipMembershipList(mlToGossip, 1);
             } catch (IOException e) {
                 // Exception means voluntarily leaving,
                 // so it's safe to ignore it.
@@ -55,12 +60,11 @@ public class GossipGroupMembershipService implements DaemonService {
     private final DatagramSocket recSocket;
     private final ScheduledExecutorService scheduler;
     private ScheduledFuture<?> future;
-    private long totalBandWidthUsage = 0;
-    private long serviceStartTime;
-    private boolean serving = false;
+    private AtomicLong totalBandWidthUsage = new AtomicLong(0);
+    private volatile long serviceStartTime = -1;
+    private volatile long serviceStopTime = -1;
 
-    private static void gossipMembershipList(MembershipList ml, DatagramSocket sendSocket,
-            int count) throws IOException {
+    private void gossipMembershipList(MembershipList ml, int count) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(baos);
         synchronized (ml) {
@@ -74,6 +78,7 @@ public class GossipGroupMembershipService implements DaemonService {
             if (dest != null) {
                 DatagramPacket packet = new DatagramPacket(bytes, bytes.length, dest.IP, dest.port);
                 synchronized (sendSocket) {
+                    totalBandWidthUsage.addAndGet(bytes.length);
                     sendSocket.send(packet);
                 }
             }
@@ -102,7 +107,6 @@ public class GossipGroupMembershipService implements DaemonService {
     // doc should mention return immediately, run in other threads.
     @Override
     public void startServe() {
-        serving = true;
         serviceStartTime = System.currentTimeMillis();
         future = scheduler.scheduleAtFixedRate(new GossipSender(), 0, Catalog.GOSSIP_PERIOD,
                 Catalog.GOSSIP_PERIOD_TIME_UNIT);
@@ -115,14 +119,14 @@ public class GossipGroupMembershipService implements DaemonService {
         scheduler.shutdown();
         MembershipList vlm = membershipList.voluntaryLeaveMessage();
         try {
-            GossipGroupMembershipService.gossipMembershipList(vlm, sendSocket,
-                    Catalog.NUM_LEAVE_GOSSIP);
+            gossipMembershipList(vlm, Catalog.NUM_LEAVE_GOSSIP);
         } catch (IOException e) {
             // TODO maybe suppress exception?
             e.printStackTrace();
         }
         sendSocket.close();
         recSocket.close();
+        serviceStopTime = System.currentTimeMillis();
     }
 
     public List<Address> getMembers() {
@@ -130,10 +134,18 @@ public class GossipGroupMembershipService implements DaemonService {
     }
 
     public long getTotalBandwidthUsage() {
-        return this.totalBandWidthUsage;
+        return this.totalBandWidthUsage.get();
     }
-    
-    public long getServiceRunningTime() {
-        
+
+    // bytes / second
+    public double getAvgBandwidthUsage() {
+        if (serviceStartTime == -1) {
+            return 0;
+        } else if (serviceStopTime == -1) {
+            return (double) totalBandWidthUsage.get()
+                    / ((System.currentTimeMillis() - serviceStartTime) / 1000.0);
+        } else {
+            return totalBandWidthUsage.get() / ((serviceStopTime - serviceStartTime) / 1000.0);
+        }
     }
 }
