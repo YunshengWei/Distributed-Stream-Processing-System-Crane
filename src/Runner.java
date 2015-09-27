@@ -20,6 +20,9 @@ public class Runner {
                 ggms.stopServe();
             } else if (line.equals("Stop log query service")) {
                 lqs.stopServe();
+            } else {
+                System.out.println(ggms.getAvgBandwidthUsage());
+                System.out.println(ggms.getTotalBandwidthUsage());
             }
         }
         in.close();

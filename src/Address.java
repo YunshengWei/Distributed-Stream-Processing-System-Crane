@@ -6,12 +6,10 @@ public final class Address implements Serializable, Comparable<Address> {
     
     public final InetAddress IP;
     public final int port;
-    private transient final String stringRepresentation;
 
     Address(InetAddress IP, int port) {
         this.IP = IP;
         this.port = port;
-        this.stringRepresentation = IP.toString() + ":" + port;
     }
 
     @Override
@@ -27,7 +25,7 @@ public final class Address implements Serializable, Comparable<Address> {
 
     @Override
     public String toString() {
-        return stringRepresentation;
+        return IP.toString() + ":" + port;
     }
 
     @Override
