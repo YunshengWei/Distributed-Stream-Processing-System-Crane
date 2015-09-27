@@ -9,19 +9,12 @@ import org.apache.commons.cli.ParseException;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONValue;
 
-/**
- * This is the main class for Server. ServerThread is a thread within the
- * Server. Its main task is to take the socket, bind and listen on it. It also
- * calls execute function of Grep class to run grep functionality.
- **/
+public class LogQueryService implements DaemonService {
 
-public class Server {
-    private final ServerSocket serverSocket;
-
-    private class ServerThread implements Runnable {
+    private class GrepWorker implements Runnable {
         private final Socket socket;
 
-        public ServerThread(Socket socket) {
+        GrepWorker(Socket socket) {
             this.socket = socket;
         }
 
@@ -40,7 +33,8 @@ public class Server {
                     switch ((String) cmd.get(0)) {
                     case "grep":
                         @SuppressWarnings("unchecked")
-                        String[] args = (String[]) cmd.subList(1, cmd.size()).toArray(new String[0]);
+                        String[] args = (String[]) cmd.subList(1, cmd.size())
+                                .toArray(new String[0]);
                         ;
                         new Grep(args, os, Catalog.LOG_DIR).execute();
                         return;
@@ -63,26 +57,52 @@ public class Server {
 
     }
 
-    public Server(int portNumber) throws IOException {
-        serverSocket = new ServerSocket(portNumber);
+    private final ServerSocket serverSocket;
+
+    private LogQueryService(ServerSocket serverSocket) {
+        this.serverSocket = serverSocket;
     }
 
-    public void serve() throws IOException {
-        while (true) {
-            Socket socket = serverSocket.accept();
-            (new Thread(new ServerThread(socket))).start();
+    public static LogQueryService create(int portNumber) throws IOException {
+        ServerSocket serverSocket = new ServerSocket(portNumber);
+        return new LogQueryService(serverSocket);
+    }
+
+    @Override
+    public void startServe() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    while (true) {
+                        new Thread(new GrepWorker(serverSocket.accept())).start();
+                    }
+                } catch (IOException e) {
+                    // TODO
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
+    @Override
+    public void stopServe() {
+        try {
+            serverSocket.close();
+        } catch (IOException e) {
+            // TODO
+            e.printStackTrace();
         }
     }
-
+    
     public static void main(String[] args) throws IOException {
         if (args.length != 1) {
-            System.err.println("Usage: java Server <port number>");
+            System.err.println("Usage: java LogQueryService <port number>");
             System.exit(-1);
         }
 
         int portNumber = Integer.parseInt(args[0]);
-        Server server = new Server(portNumber);
-        server.serve();
+        LogQueryService lqs = LogQueryService.create(portNumber);
+        lqs.startServe();
     }
-
 }

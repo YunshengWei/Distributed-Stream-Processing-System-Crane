@@ -46,7 +46,8 @@ public class Grep {
         HelpFormatter formatter = new HelpFormatter();
         String cmdLineSyntax = "java Grep [-options] [pattern] [file ...]";
         String header = String.format("%n%s", "The following options are available:");
-        formatter.printHelp(new PrintWriter(System.err, true), 74, cmdLineSyntax, header, Grep.OPTIONS, 1, 3, null);
+        formatter.printHelp(new PrintWriter(System.err, true), 74, cmdLineSyntax, header,
+                Grep.OPTIONS, 1, 3, null);
     }
 
     /**
@@ -64,17 +65,20 @@ public class Grep {
     }
 
     private static void addBooleanOptions(Options options) {
-        options.addOption("c", "count", false, "Only a count of selected lines is written to standard output.");
+        options.addOption("c", "count", false,
+                "Only a count of selected lines is written to standard output.");
         options.addOption("i", "ignore-case", false,
                 "Perform case insensitive matching.  By default, grep is case sensitive.");
-        options.addOption("n", "line-number", false, "Each output line is preceded by its relative line number in the "
-                + "file, starting at line 1.  The line number counter is reset for each file processed.");
+        options.addOption("n", "line-number", false,
+                "Each output line is preceded by its relative line number in the "
+                        + "file, starting at line 1.  The line number counter is reset for each file processed.");
         options.addOption("v", "invert-match", false,
                 "Selected lines are those not matching any of the specified patterns.");
         options.addOption("w", "word-regexp", false,
                 "Select only those lines containing matches that form whole words.");
-        options.addOption("x", "line-regexp", false, "Only input lines selected against an entire fixed string or"
-                + " regular expression are considered to be matching lines.");
+        options.addOption("x", "line-regexp", false,
+                "Only input lines selected against an entire fixed string or"
+                        + " regular expression are considered to be matching lines.");
     }
 
     private static void addArgumentOptions(Options options) {
@@ -97,10 +101,12 @@ public class Grep {
      *            options for Grep.
      * @param os
      *            the OutputStream to which matched lines should be written to.
+     * @param rootDir
+     *            file paths are relevant to the rootDir
      * @throws ParseException
      *             if any of the specified options is not valid.
      */
-    public Grep(String[] options, OutputStream os) throws ParseException {
+    public Grep(String[] options, OutputStream os, String rootDir) throws ParseException {
         try {
             this.os = os;
             CommandLineParser parser = new DefaultParser();
@@ -116,6 +122,10 @@ public class Grep {
             } else {
                 regexp = "(" + argList.get(0) + ")";
                 this.fileNamePatterns = argList.subList(1, argList.size());
+            }
+            
+            for (int i = 0; i < this.fileNamePatterns.size(); i++) {
+                this.fileNamePatterns.set(i, rootDir + this.fileNamePatterns.get(i));
             }
 
             int flags = 0;
@@ -232,7 +242,8 @@ public class Grep {
                     if (matcher.matches(Paths.get(fn))) {
                         matched = true;
                         if (f.isDirectory()) {
-                            System.err.println(String.format("grep: %s: Is a directory", dirPrefix + fn));
+                            System.err.println(
+                                    String.format("grep: %s: Is a directory", dirPrefix + fn));
                         } else {
                             targetFiles.add(dirPrefix + fn);
                         }
@@ -277,7 +288,8 @@ public class Grep {
             for (String fileName : targetFiles) {
                 String prefix = fileName + ":";
                 try {
-                    sc = new Scanner(new InputStreamReader(new FileInputStream(fileName), Catalog.encoding));
+                    sc = new Scanner(
+                            new InputStreamReader(new FileInputStream(fileName), Catalog.encoding));
                     sc.useDelimiter("\\n|\\r\\n");
                     grep(sc, pw, prefix);
                     sc.close();
@@ -298,7 +310,7 @@ public class Grep {
     // for command line use
     public static void main(String args[]) {
         try {
-            Grep grep = new Grep(args, System.out);
+            Grep grep = new Grep(args, System.out, "");
             grep.execute();
         } catch (ParseException e) {
             System.err.println(e.getMessage());

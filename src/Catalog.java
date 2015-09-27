@@ -4,11 +4,27 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Catalog stores information about the whole system.
  */
 public class Catalog {
+
+    /** T_cleanup and T_fail in nanoseconds */
+    public static final long CLEANUP_TIME = 1500;
+    public static final long FAIL_TIME = 1000;
+    /** period of gossip group membership service, measured in milliseconds */
+    public static final long GOSSIP_PERIOD = 300;
+    public static final TimeUnit GOSSIP_PERIOD_TIME_UNIT = TimeUnit.MILLISECONDS;
+    public static final int MAX_UDP_PACKET_BYTES = 1000;
+    public static final int NUM_LEAVE_GOSSIP = 1;
+
+    public static final String INTRODUCER_ADDRESS = "localhost";
+    public static final int MEMBERSHIP_SERVICE_PORT = 60003;
+    
+    public static final int LOG_QUERY_SERVICE_PORT = 60001;
+    public static final String LOG_DIR = "log/";
 
     /**
      * Host stores information about a host, including host name, IP address,
@@ -43,14 +59,12 @@ public class Catalog {
         }
     }
 
-    /** the directory where log files are stored */
-    private static final String LOGDIR = "log";
     /** the path of the file which keeps host information */
     private static final String HOST_FILE_PATH = "conf/host_list";
 
     private static final List<Host> hostList = buildHostList();
     private static final Map<String, Host> hostNameMap = buildHostNameMap();
-    
+
     /** Specify the character encoding used by the whole system */
     public static final String encoding = "UTF-8";
 
@@ -67,7 +81,7 @@ public class Catalog {
                 if (line.trim().length() == 0) {
                     continue;
                 }
-                
+
                 String[] words = line.split("\\s+");
                 // the format should be in this order:
                 // <host name> <IP address> <port number>
@@ -82,7 +96,7 @@ public class Catalog {
             e.printStackTrace();
             System.exit(-1);
         }
-        
+
         // Should never reach here.
         return null;
     }
@@ -106,10 +120,6 @@ public class Catalog {
 
     public static Host getHostByName(String hostName) {
         return hostNameMap.get(hostName);
-    }
-
-    public static String getLogDirectory() {
-        return LOGDIR;
     }
 
     // unit test

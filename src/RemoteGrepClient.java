@@ -109,7 +109,7 @@ public class RemoteGrepClient {
         // args errors are detected here,
         // so no invalid commands will be sent to other servers.
         try {
-            Grep grep = new Grep(args, null);
+            Grep grep = new Grep(args, null, "");
 
             if (grep.getFileNamePatterns().isEmpty()) {
                 System.err.println("RemoteGrepClient requires at least one file as arguments.");

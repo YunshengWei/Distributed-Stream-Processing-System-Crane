@@ -47,6 +47,7 @@ public class DistributedGrepTest {
         
         Reader r = new InputStreamReader(new FileInputStream("grepResult"));
         Assert.assertTrue(TestUtil.compareTwoFiles(sr1, r));
+        r.close();
     }
 
 }
