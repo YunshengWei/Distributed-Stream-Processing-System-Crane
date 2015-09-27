@@ -50,7 +50,9 @@ public class MembershipList implements Serializable {
         long currentTime = System.currentTimeMillis();
         ml.membershipList.add(new Member(selfAddress, 0, currentTime, false));
         for (Address address : initialAdds) {
-            ml.membershipList.add(new Member(address, 0, currentTime, false));
+            if (!address.equals(selfAddress)) {
+                ml.membershipList.add(new Member(address, 0, currentTime, false));
+            }
         }
         Collections.sort(ml.membershipList, Member.compareByAddress);
 
