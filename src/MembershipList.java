@@ -1,6 +1,4 @@
 import java.io.Serializable;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -156,6 +154,16 @@ public class MembershipList implements Serializable {
         List<Identity> list = new ArrayList<>();
         for (Member m : membershipList) {
             if (!m.id.equals(selfId) && m.state == State.ALIVE) {
+                list.add(m.id);
+            }
+        }
+        return list;
+    }
+    
+    public synchronized List<Identity> getAliveMembersIncludingSelf() {
+        List<Identity> list = new ArrayList<>();
+        for (Member m : membershipList) {
+            if (m.state == State.ALIVE) {
                 list.add(m.id);
             }
         }

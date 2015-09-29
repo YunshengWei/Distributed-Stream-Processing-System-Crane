@@ -6,6 +6,7 @@ public final class Address implements Serializable, Comparable<Address> {
     
     public final InetAddress IP;
     public final int port;
+    private transient Integer hashCache = null;
 
     Address(InetAddress IP, int port) {
         this.IP = IP;
@@ -13,13 +14,14 @@ public final class Address implements Serializable, Comparable<Address> {
     }
 
     @Override
-    public boolean equals(Object that) {
-        if (that == this) {
+    public boolean equals(Object obj) {
+        if (obj == this) {
             return true;
-        } else if (!(that instanceof Address)) {
+        } else if (!(obj instanceof Address)) {
             return false;
         } else {
-            return this.toString().equals(((Address) that).toString());
+            Address that = (Address) obj;
+            return this.IP.equals(that.IP) && this.port == that.port;
         }
     }
 
@@ -35,6 +37,9 @@ public final class Address implements Serializable, Comparable<Address> {
 
     @Override
     public int hashCode() {
-        return toString().hashCode();
+        if (hashCache == null) {
+            hashCache = toString().hashCode();
+        }
+        return hashCache;
     }
 }

@@ -12,10 +12,12 @@ import java.util.concurrent.TimeUnit;
 public class Catalog {
 
     /** T_cleanup and T_fail in nanoseconds */
-    public static final long CLEANUP_TIME = 1500;
+    public static final long CLEANUP_TIME = 2000;
     public static final long FAIL_TIME = 1000;
     /** period of gossip group membership service, measured in milliseconds */
-    public static final long GOSSIP_PERIOD = 300;
+    public static final long GOSSIP_PERIOD = 200;
+    /** period of negotiate with introducer, measured in milliseconds */
+    public static final long INTRODUCER_NEGOTIATE_PERIOD = 1000;
     public static final TimeUnit GOSSIP_PERIOD_TIME_UNIT = TimeUnit.MILLISECONDS;
     public static final int MAX_UDP_PACKET_BYTES = 1000;
     public static final int NUM_LEAVE_GOSSIP = 1;
