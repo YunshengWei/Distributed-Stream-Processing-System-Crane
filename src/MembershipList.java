@@ -1,155 +1,222 @@
 import java.io.Serializable;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-// ordered, support quick merge and random choice
+/**
+ * MembershipList is a thread safe class which implements membership list used
+ * by group membership protocol. It represents a local view of the group from a
+ * member. It is internally implemented using sorted ArrayList, so as to support
+ * quick merge and quick random choice. Besides using synchronized for every
+ * method, the Member class need to be immutable in order to void race
+ * conditions. Think about it carefully!
+ */
 public class MembershipList implements Serializable {
     private static final long serialVersionUID = 1L;
-    
-    private static class Member implements Serializable {
+
+    /**
+     * There are 3 kinds of states for a member: fail, alive, and leave.
+     */
+    public static enum State {
+        FAIL, ALIVE, LEAVE,
+    }
+
+    /**
+     * MemberStateChange represents state change of a member.
+     */
+    public static class MemberStateChange {
+        Identity id;
+        State toState;
+
+        MemberStateChange(Identity id, State toState) {
+            this.id = id;
+            this.toState = toState;
+        }
+
+        @Override
+        public String toString() {
+            if (toState == State.LEAVE) {
+                return id.toString() + " leaves the group";
+            } else if (toState == State.FAIL) {
+                return id.toString() + " fails";
+            } else {
+                return id.toString() + " joins the group";
+            }
+        }
+    }
+
+    /**
+     * Member is an immutable class that stores information about a member in
+     * membership list. Think about it carefully! If Member is allowed to
+     * change, then it will introduce race conditions!
+     */
+    public static class Member implements Serializable {
         private static final long serialVersionUID = 1L;
 
-        final Address address;
-        int heartbeatCounter;
-        transient long lastUpdateTime;
-        boolean leave;
+        final Identity id;
+        final int heartbeatCounter;
+        final transient long lastUpdateTime;
+        final State state;
 
-        public static final Comparator<Member> compareByAddress = new Comparator<Member>() {
+        public static final Comparator<Member> compareByIdentity = new Comparator<Member>() {
             @Override
             public int compare(Member o1, Member o2) {
-                return o1.address.compareTo(o2.address);
+                return o1.id.compareTo(o2.id);
             }
         };
 
-        Member(Address address) {
-            this(address, 0, 0, false);
-        }
-
-        Member(Address address, int heartbeatCounter, long lastUpdateTime, boolean leave) {
-            this.address = address;
+        Member(Identity id, int heartbeatCounter, long lastUpdateTime, State state) {
+            this.id = id;
             this.heartbeatCounter = heartbeatCounter;
             this.lastUpdateTime = lastUpdateTime;
-            this.leave = leave;
+            this.state = state;
         }
     }
 
     private List<Member> membershipList;
-    private transient final Address selfAddress;
+    private transient final Identity selfId;
 
-    private MembershipList(Address selfAddress) {
+    /**
+     * Construct membership list with self id. It contains self as initial
+     * member.
+     * 
+     * @param selfId
+     *            the identity of self
+     */
+    public MembershipList(Identity selfId) {
         membershipList = new ArrayList<>();
-        this.selfAddress = selfAddress;
+        membershipList.add(new Member(selfId, 0, System.currentTimeMillis(), State.ALIVE));
+        this.selfId = selfId;
     }
 
-    public static MembershipList createMembershipList(Address selfAddress, Address... initialAdds) {
-        MembershipList ml = new MembershipList(selfAddress);
-
+    /**
+     * Merge with another membership list. Add new members, and update states
+     * for old members.
+     * 
+     * @param that
+     *            the membership list to merge with
+     * @return a list containing state changes for members
+     */
+    public synchronized List<MemberStateChange> merge(MembershipList that) {
         long currentTime = System.currentTimeMillis();
-        ml.membershipList.add(new Member(selfAddress, 0, currentTime, false));
-        for (Address address : initialAdds) {
-            if (!address.equals(selfAddress)) {
-                ml.membershipList.add(new Member(address, 0, currentTime, false));
-            }
-        }
-        Collections.sort(ml.membershipList, Member.compareByAddress);
 
-        return ml;
-    }
-
-    public synchronized void merge(MembershipList msl) {
-        long currentTime = System.currentTimeMillis();
+        List<MemberStateChange> mscList = new ArrayList<>();
 
         int i = 0;
         int j = 0;
-        List<Member> newList = new ArrayList<>();
-        while (i < size() && j < msl.size()) {
+        List<Member> newml = new ArrayList<>();
+        while (i < size() && j < that.size()) {
             Member m1 = membershipList.get(i);
-            Member m2 = msl.membershipList.get(j);
+            Member m2 = that.membershipList.get(j);
 
-            int cp = Member.compareByAddress.compare(m1, m2);
+            int cp = Member.compareByIdentity.compare(m1, m2);
             if (cp == 0) {
                 i++;
                 j++;
                 if (m2.heartbeatCounter > m1.heartbeatCounter) {
-                    m1.heartbeatCounter = m2.heartbeatCounter;
-                    m1.lastUpdateTime = currentTime;
-                    m1.leave = m2.leave;
+                    if (m1.state != m2.state) {
+                        mscList.add(new MemberStateChange(m1.id, m2.state));
+                    }
+                    newml.add(new Member(m1.id, m2.heartbeatCounter, currentTime, m2.state));
+                } else {
+                    newml.add(m1);
                 }
-                newList.add(m1);
             } else if (cp < 0) {
                 i++;
-                newList.add(m1);
+                newml.add(m1);
             } else {
-                newList.add(new Member(m2.address, m2.heartbeatCounter, currentTime, false));
+                newml.add(new Member(m2.id, m2.heartbeatCounter, currentTime, m2.state));
+                mscList.add(new MemberStateChange(m2.id, m2.state));
                 j++;
             }
         }
 
         while (i < size()) {
-            newList.add(membershipList.get(i++));
+            newml.add(membershipList.get(i++));
         }
 
-        while (j < msl.size()) {
-            Member m = msl.membershipList.get(j++);
-            newList.add(new Member(m.address, m.heartbeatCounter, currentTime, m.leave));
+        while (j < that.size()) {
+            Member m = that.membershipList.get(j++);
+            newml.add(new Member(m.id, m.heartbeatCounter, currentTime, m.state));
+            mscList.add(new MemberStateChange(m.id, m.state));
         }
 
-        membershipList = newList;
+        membershipList = newml;
+        return mscList;
     }
 
-    public synchronized boolean isAlive(Address address) {
-        int idx = Collections.binarySearch(membershipList, new Member(address),
-                Member.compareByAddress);
-        return idx >= 0
-                && System.currentTimeMillis()
-                        - membershipList.get(idx).lastUpdateTime <= Catalog.FAIL_TIME
-                && !membershipList.get(idx).leave;
-    }
-
-    // Except self
-    public synchronized List<Address> getAliveMembersExceptSelf() {
-        long currentTime = System.currentTimeMillis();
-        List<Address> list = new ArrayList<>();
+    /**
+     * @return the identity of all the alive members except self
+     */
+    public synchronized List<Identity> getAliveMembersExceptSelf() {
+        List<Identity> list = new ArrayList<>();
         for (Member m : membershipList) {
-            if (!m.address.equals(selfAddress)
-                    && currentTime - m.lastUpdateTime <= Catalog.FAIL_TIME && !m.leave) {
-                list.add(m.address);
+            if (!m.id.equals(selfId) && m.state == State.ALIVE) {
+                list.add(m.id);
             }
         }
         return list;
     }
 
-    // Include self. increment self heartbeatCounter, cleanup, and get alive
-    // sublist
-    public synchronized MembershipList updateAndGetNonFailMembers() {
-        MembershipList sublist = new MembershipList(selfAddress);
-        List<Member> newList = new ArrayList<>();
-
+    /**
+     * Increment self heart beat counter, and clean up failed members.
+     * 
+     * @return a list containing state changes for members
+     */
+    public synchronized List<MemberStateChange> update() {
         long currentTime = System.currentTimeMillis();
-        for (Member m : membershipList) {
-            if (m.address.equals(selfAddress)) {
-                m.heartbeatCounter += 1;
-                m.lastUpdateTime = currentTime;
-            }
 
-            long t = currentTime - m.lastUpdateTime;
-            if (t <= Catalog.CLEANUP_TIME) {
-                newList.add(m);
-                if (t <= Catalog.FAIL_TIME) {
-                    sublist.membershipList.add(m);
+        List<Member> newml = new ArrayList<>();
+        List<MemberStateChange> mscList = new ArrayList<>();
+
+        for (Member m : membershipList) {
+            if (m.id.equals(selfId)) {
+                newml.add(new Member(m.id, m.heartbeatCounter + 1, currentTime, m.state));
+            } else {
+                long t = currentTime - m.lastUpdateTime;
+                if (t <= Catalog.CLEANUP_TIME) {
+                    if (t > Catalog.FAIL_TIME && m.state == State.ALIVE) {
+                        newml.add(
+                                new Member(m.id, m.heartbeatCounter, m.lastUpdateTime, State.FAIL));
+                        mscList.add(new MemberStateChange(m.id, State.FAIL));
+                    } else {
+                        newml.add(m);
+                    }
                 }
             }
         }
 
-        membershipList = newList;
-        return sublist;
+        membershipList = newml;
+        return mscList;
     }
 
-    public synchronized Address getRandomAliveMember() {
-        List<Address> aliveMembers = getAliveMembersExceptSelf();
+    /**
+     * @return a MembershipList containing all the non fail members, including
+     *         self and leave nodes (as long as they have not failed, so the
+     *         leave message can be gossiped).
+     */
+    public synchronized MembershipList getNonFailMembers() {
+        MembershipList ml = new MembershipList(selfId);
+
+        for (Member m : membershipList) {
+            if (m.state != State.FAIL) {
+                ml.membershipList.add(m);
+            }
+
+        }
+        return ml;
+    }
+
+    /**
+     * @return the identity of a random alive member except self. If no such
+     *         member exists, return <code>null</code>
+     */
+    public synchronized Identity getRandomAliveMember() {
+        List<Identity> aliveMembers = getAliveMembersExceptSelf();
         if (aliveMembers.size() == 0) {
             return null;
         } else {
@@ -158,16 +225,24 @@ public class MembershipList implements Serializable {
         }
     }
 
+    /**
+     * @return the MembershipList only containing self with an incrementing
+     *         heart beat counter and leave state
+     */
     public synchronized MembershipList voluntaryLeaveMessage() {
-        int idx = Collections.binarySearch(membershipList, new Member(selfAddress),
-                Member.compareByAddress);
+        int idx = Collections.binarySearch(membershipList, new Member(selfId, 0, 0, State.ALIVE),
+                Member.compareByIdentity);
         Member self = membershipList.get(idx);
-        MembershipList vlm = new MembershipList(self.address);
-        vlm.membershipList.add(new Member(self.address, self.heartbeatCounter + 1,
-                System.currentTimeMillis(), true));
+        MembershipList vlm = new MembershipList(self.id);
+        // Add a large number to heartbeatCounter to avoid race conditions with
+        // other Gossip threads.
+        vlm.membershipList.set(0, new Member(self.id, self.heartbeatCounter + 10, 0, State.LEAVE));
         return vlm;
     }
 
+    /**
+     * @return the number of members in the membership list.
+     */
     public synchronized int size() {
         return membershipList.size();
     }
@@ -175,12 +250,12 @@ public class MembershipList implements Serializable {
     @Override
     public synchronized String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("{%n"));
+        sb.append(String.format("[%n"));
         for (Member m : membershipList) {
-            sb.append(String.format("\t%s\t%s\t%s\t%s%n", m.address, m.heartbeatCounter,
-                    m.lastUpdateTime, m.leave));
+            sb.append(String.format("\t%s\t%s\t%s\t%s%n", m.id, m.heartbeatCounter,
+                    m.lastUpdateTime, m.state));
         }
-        sb.append("}");
+        sb.append("]");
         return sb.toString();
     }
 }
