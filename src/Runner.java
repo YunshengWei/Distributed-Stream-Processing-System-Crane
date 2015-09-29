@@ -19,6 +19,8 @@ public class Runner {
                 ggms.stopServe();
             } else if (line.equals("Stop log query service")) {
                 // lqs.stopServe();
+            } else if (line.equals("Join group")) {
+                ggms.startServe();
             }
         }
         in.close();

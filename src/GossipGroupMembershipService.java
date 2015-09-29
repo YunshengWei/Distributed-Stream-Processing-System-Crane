@@ -25,7 +25,6 @@ public class GossipGroupMembershipService implements DaemonService {
         @Override
         public void run() {
             try {
-                System.out.println(membershipList);
                 List<MembershipList.MemberStateChange> mscList = membershipList.update();
                 for (MembershipList.MemberStateChange msc : mscList) {
                     System.out.println(msc);
@@ -34,7 +33,6 @@ public class GossipGroupMembershipService implements DaemonService {
                     System.out.println(membershipList);
                 }
                 Identity id = membershipList.getRandomAliveMember();
-                System.out.println(membershipList);
                 if (id != null) {
                     sendMembershipList(membershipList.getNonFailMembers(), id.IPAddress);
                 }
@@ -81,7 +79,6 @@ public class GossipGroupMembershipService implements DaemonService {
                             .readObject();
                     List<MembershipList.MemberStateChange> mscList = membershipList
                             .merge(receivedMsl);
-                    System.out.println(membershipList);
                     for (MembershipList.MemberStateChange msc : mscList) {
                         System.out.println(msc);
                     }
