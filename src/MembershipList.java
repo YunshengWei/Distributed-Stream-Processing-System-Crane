@@ -17,10 +17,12 @@ public class MembershipList implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * There are 3 kinds of states for a member: fail, alive, and leave.
+     * There are 4 kinds of states for a member: fail, alive, leave, and delete.
+     * Delete will actually never appear, it is only used to represent the event
+     * a member is deleted from membership list.
      */
     public static enum State {
-        FAIL, ALIVE, LEAVE,
+        FAIL, ALIVE, LEAVE, CLEANUP,
     }
 
     /**
@@ -37,12 +39,19 @@ public class MembershipList implements Serializable {
 
         @Override
         public String toString() {
-            if (toState == State.LEAVE) {
+
+            switch (toState) {
+            case LEAVE:
                 return id.toString() + " leaves the group";
-            } else if (toState == State.FAIL) {
+            case FAIL:
                 return id.toString() + " fails";
-            } else {
+            case ALIVE:
                 return id.toString() + " joins the group";
+            case CLEANUP:
+                return "cleanup " + id.toString() + " from membership list";
+            default:
+                // should never reach here
+                return null;
             }
         }
     }
@@ -90,7 +99,7 @@ public class MembershipList implements Serializable {
         membershipList.add(new Member(selfId, 0, System.currentTimeMillis(), State.ALIVE));
         this.selfId = selfId;
     }
-    
+
     private MembershipList() {
         membershipList = new ArrayList<>();
         this.selfId = null;
@@ -164,7 +173,7 @@ public class MembershipList implements Serializable {
         }
         return list;
     }
-    
+
     public synchronized List<Identity> getAliveMembersIncludingSelf() {
         List<Identity> list = new ArrayList<>();
         for (Member m : membershipList) {
@@ -199,6 +208,8 @@ public class MembershipList implements Serializable {
                     } else {
                         newml.add(m);
                     }
+                } else {
+                    mscList.add(new MemberStateChange(m.id, State.CLEANUP));
                 }
             }
         }
