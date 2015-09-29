@@ -90,6 +90,11 @@ public class MembershipList implements Serializable {
         membershipList.add(new Member(selfId, 0, System.currentTimeMillis(), State.ALIVE));
         this.selfId = selfId;
     }
+    
+    private MembershipList() {
+        membershipList = new ArrayList<>();
+        this.selfId = null;
+    }
 
     /**
      * Merge with another membership list. Add new members, and update states
@@ -183,7 +188,7 @@ public class MembershipList implements Serializable {
 
         for (Member m : membershipList) {
             if (m.id.equals(selfId)) {
-                newml.add(new Member(m.id, m.heartbeatCounter + 1, currentTime, m.state));
+                newml.add(new Member(m.id, m.heartbeatCounter + 1, currentTime, State.ALIVE));
             } else {
                 long t = currentTime - m.lastUpdateTime;
                 if (t <= Catalog.CLEANUP_TIME) {
@@ -208,7 +213,7 @@ public class MembershipList implements Serializable {
      *         leave message can be gossiped).
      */
     public synchronized MembershipList getNonFailMembers() {
-        MembershipList ml = new MembershipList(selfId);
+        MembershipList ml = new MembershipList();
 
         for (Member m : membershipList) {
             if (m.state != State.FAIL) {
@@ -241,10 +246,10 @@ public class MembershipList implements Serializable {
         int idx = Collections.binarySearch(membershipList, new Member(selfId, 0, 0, State.ALIVE),
                 Member.compareByIdentity);
         Member self = membershipList.get(idx);
-        MembershipList vlm = new MembershipList(self.id);
+        MembershipList vlm = new MembershipList();
         // Add a large number to heartbeatCounter to avoid race conditions with
         // other Gossip threads.
-        vlm.membershipList.set(0, new Member(self.id, self.heartbeatCounter + 10, 0, State.LEAVE));
+        vlm.membershipList.add(new Member(self.id, self.heartbeatCounter + 10, 0, State.LEAVE));
         return vlm;
     }
 

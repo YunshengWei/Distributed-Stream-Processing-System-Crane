@@ -15,7 +15,7 @@ public class Catalog {
     public static final long CLEANUP_TIME = 2000;
     public static final long FAIL_TIME = 1000;
     /** period of gossip group membership service, measured in milliseconds */
-    public static final long GOSSIP_PERIOD = 200;
+    public static final long GOSSIP_PERIOD = 300;
     /** period of negotiate with introducer, measured in milliseconds */
     public static final long INTRODUCER_NEGOTIATE_PERIOD = 1000;
     public static final TimeUnit GOSSIP_PERIOD_TIME_UNIT = TimeUnit.MILLISECONDS;

@@ -25,11 +25,16 @@ public class GossipGroupMembershipService implements DaemonService {
         @Override
         public void run() {
             try {
+                System.out.println(membershipList);
                 List<MembershipList.MemberStateChange> mscList = membershipList.update();
                 for (MembershipList.MemberStateChange msc : mscList) {
                     System.out.println(msc);
                 }
+                if (mscList.size() > 0) {
+                    System.out.println(membershipList);
+                }
                 Identity id = membershipList.getRandomAliveMember();
+                System.out.println(membershipList);
                 if (id != null) {
                     sendMembershipList(membershipList.getNonFailMembers(), id.IPAddress);
                 }
@@ -76,8 +81,12 @@ public class GossipGroupMembershipService implements DaemonService {
                             .readObject();
                     List<MembershipList.MemberStateChange> mscList = membershipList
                             .merge(receivedMsl);
+                    System.out.println(membershipList);
                     for (MembershipList.MemberStateChange msc : mscList) {
                         System.out.println(msc);
+                    }
+                    if (mscList.size() > 0) {
+                        System.out.println(membershipList);
                     }
                 }
             } catch (IOException e) {
@@ -137,15 +146,21 @@ public class GossipGroupMembershipService implements DaemonService {
 
         future1 = scheduler.scheduleAtFixedRate(new GossipSender(), 0, Catalog.GOSSIP_PERIOD,
                 Catalog.GOSSIP_PERIOD_TIME_UNIT);
-        future2 = scheduler.scheduleAtFixedRate(new IntroducerNegotiator(), 0,
+        if (!introducerIP.equals(InetAddress.getLocalHost())) {
+            future2 = scheduler.scheduleAtFixedRate(new IntroducerNegotiator(), 0,
                 Catalog.INTRODUCER_NEGOTIATE_PERIOD, Catalog.GOSSIP_PERIOD_TIME_UNIT);
+        } else {
+            future2 = null;
+        }
         new Thread(new GossipReceiver()).start();
     }
 
     @Override
     public void stopServe() {
         future1.cancel(false);
-        future2.cancel(false);
+        if (future2 != null) {
+            future2.cancel(false);
+        }
         scheduler.shutdown();
         recSocket.close();
 
