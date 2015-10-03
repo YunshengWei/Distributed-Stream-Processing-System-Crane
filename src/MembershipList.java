@@ -104,6 +104,13 @@ public class MembershipList implements Serializable {
         membershipList = new ArrayList<>();
         this.selfId = null;
     }
+    
+    /**
+     * @return self's id
+     */
+    public Identity getSelfId() {
+        return selfId;
+    }
 
     /**
      * Merge with another membership list. Add new members, and update states

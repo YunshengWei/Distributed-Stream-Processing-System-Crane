@@ -21,6 +21,8 @@ public class Runner {
                 // lqs.stopServe();
             } else if (line.equals("Join group")) {
                 ggms.startServe();
+            } else {
+                System.out.println(ggms.getMembershipList());
             }
         }
         in.close();

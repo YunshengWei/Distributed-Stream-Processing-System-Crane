@@ -9,7 +9,13 @@ import java.net.InetAddress;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.FileHandler;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 /**
  * GossipGroupMembershipService is a daemon service, which implements gossip
@@ -25,16 +31,18 @@ public class GossipGroupMembershipService implements DaemonService {
         @Override
         public void run() {
             try {
-                List<MembershipList.MemberStateChange> mscList = membershipList.update();
-                for (MembershipList.MemberStateChange msc : mscList) {
-                    System.out.println(msc);
+                Identity id = null;
+                MembershipList nfm = null;
+                // need to use synchronized here, otherwise membership list and
+                // member state changes will be inconsistent
+                synchronized (membershipList) {
+                    List<MembershipList.MemberStateChange> mscList = membershipList.update();
+                    log(mscList);
+                    id = membershipList.getRandomAliveMember();
+                    nfm = membershipList.getNonFailMembers();
                 }
-                if (mscList.size() > 0) {
-                    System.out.println(membershipList);
-                }
-                Identity id = membershipList.getRandomAliveMember();
                 if (id != null) {
-                    sendMembershipList(membershipList.getNonFailMembers(), id.IPAddress);
+                    sendMembershipList(nfm, id.IPAddress);
                 }
             } catch (IOException e) {
                 // Exception means voluntarily leaving,
@@ -77,20 +85,18 @@ public class GossipGroupMembershipService implements DaemonService {
                     ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData());
                     MembershipList receivedMsl = (MembershipList) new ObjectInputStream(bais)
                             .readObject();
-                    List<MembershipList.MemberStateChange> mscList = membershipList
-                            .merge(receivedMsl);
-                    for (MembershipList.MemberStateChange msc : mscList) {
-                        System.out.println(msc);
-                    }
-                    if (mscList.size() > 0) {
-                        System.out.println(membershipList);
+                    synchronized (membershipList) {
+                        List<MembershipList.MemberStateChange> mscList = membershipList
+                                .merge(receivedMsl);
+                        log(mscList);
                     }
                 }
             } catch (IOException e) {
                 // Exception means voluntarily leaving,
                 // so it's safe to ignore it.
             } catch (ClassNotFoundException e) {
-                e.printStackTrace();
+                LOGGER.log(Level.SEVERE, e.getMessage(), e);
+                System.exit(-1);
             }
         }
     }
@@ -122,12 +128,48 @@ public class GossipGroupMembershipService implements DaemonService {
 
     }
 
+    private synchronized void log(List<MembershipList.MemberStateChange> mscList) {
+        if (!mscList.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            for (MembershipList.MemberStateChange msc : mscList) {
+                sb.append(msc + System.lineSeparator());
+            }
+            sb.delete(sb.length() - System.lineSeparator().length(), sb.length());
+
+            LOGGER.info(sb.toString());
+            LOGGER.info(String.format("Current membership list is:%n%s", membershipList));
+        }
+    }
+
     private final InetAddress introducerIP;
     private MembershipList membershipList;
     private DatagramSocket sendSocket;
     private DatagramSocket recSocket;
     private ScheduledExecutorService scheduler;
-    private ScheduledFuture<?> future1, future2;
+    // java Logger is thread safe
+    private final static Logger LOGGER = initializeLogger();
+
+    // Initialize logger settings
+    private static Logger initializeLogger() {
+        Logger logger = null;
+        try {
+            logger = Logger.getLogger(GossipGroupMembershipService.class.getName());
+            Handler fileHandler = new FileHandler(Catalog.LOG_DIR + Catalog.MEMBERSHIP_SERVICE_LOG);
+            fileHandler.setFormatter(new SimpleFormatter());
+            fileHandler.setLevel(Level.ALL);
+
+            Handler consoleHandler = new ConsoleHandler();
+            consoleHandler.setFormatter(new SimpleFormatter());
+            consoleHandler.setLevel(Level.ALL);
+
+            logger.addHandler(fileHandler);
+            logger.addHandler(consoleHandler);
+        } catch (SecurityException | IOException e) {
+            logger.log(Level.SEVERE, e.getMessage(), e);
+            System.exit(-1);
+        }
+        return logger;
+    }
 
     public GossipGroupMembershipService(InetAddress introducerIP) {
         this.introducerIP = introducerIP;
@@ -141,26 +183,29 @@ public class GossipGroupMembershipService implements DaemonService {
                 new Identity(InetAddress.getLocalHost(), System.currentTimeMillis()));
         scheduler = Executors.newScheduledThreadPool(2);
 
-        future1 = scheduler.scheduleAtFixedRate(new GossipSender(), 0, Catalog.GOSSIP_PERIOD,
+        scheduler.scheduleAtFixedRate(new GossipSender(), 0, Catalog.GOSSIP_PERIOD,
                 Catalog.GOSSIP_PERIOD_TIME_UNIT);
         if (!introducerIP.equals(InetAddress.getLocalHost())) {
-            future2 = scheduler.scheduleAtFixedRate(new IntroducerNegotiator(), 0,
-                Catalog.INTRODUCER_NEGOTIATE_PERIOD, Catalog.GOSSIP_PERIOD_TIME_UNIT);
-        } else {
-            future2 = null;
+            scheduler.scheduleAtFixedRate(new IntroducerNegotiator(), 0,
+                    Catalog.INTRODUCER_NEGOTIATE_PERIOD, Catalog.GOSSIP_PERIOD_TIME_UNIT);
         }
         new Thread(new GossipReceiver()).start();
     }
 
     @Override
     public void stopServe() {
-        future1.cancel(false);
-        if (future2 != null) {
-            future2.cancel(false);
-        }
         scheduler.shutdown();
+        try {
+            // Wait a while for existing tasks to terminate
+            scheduler.awaitTermination(2, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+
+        }
         recSocket.close();
 
+        synchronized (this) {
+            LOGGER.info(String.format("%s leaves", getSelfId()));
+        }
         MembershipList vlm = membershipList.voluntaryLeaveMessage();
         try {
             for (int i = 0; i < Catalog.NUM_LEAVE_GOSSIP; i++) {
@@ -171,7 +216,8 @@ public class GossipGroupMembershipService implements DaemonService {
             }
         } catch (IOException e) {
             // IOExceptin here means real IOException
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, e.getMessage(), e);
+            System.exit(-1);
         }
         sendSocket.close();
     }
@@ -181,5 +227,19 @@ public class GossipGroupMembershipService implements DaemonService {
      */
     public List<Identity> getAliveMembers() {
         return membershipList.getAliveMembersIncludingSelf();
+    }
+
+    /**
+     * @return the membership list
+     */
+    public MembershipList getMembershipList() {
+        return membershipList;
+    }
+
+    /**
+     * @return self's id in the group
+     */
+    public Identity getSelfId() {
+        return membershipList.getSelfId();
     }
 }

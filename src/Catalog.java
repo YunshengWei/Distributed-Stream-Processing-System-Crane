@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeUnit; 
 
 /**
  * Catalog stores information about the whole system.
@@ -24,9 +24,10 @@ public class Catalog {
 
     public static final String INTRODUCER_ADDRESS = "fa15-cs425-g13-01.cs.illinois.edu";
     public static final int MEMBERSHIP_SERVICE_PORT = 60003;
-    
+
     public static final int LOG_QUERY_SERVICE_PORT = 60001;
     public static final String LOG_DIR = "log/";
+    public static final String MEMBERSHIP_SERVICE_LOG = "ms.log";
 
     /**
      * Host stores information about a host, including host name, IP address,
