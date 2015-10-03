@@ -101,12 +101,10 @@ public class Grep {
      *            options for Grep.
      * @param os
      *            the OutputStream to which matched lines should be written to.
-     * @param rootDir
-     *            file paths are relevant to the rootDir
      * @throws ParseException
      *             if any of the specified options is not valid.
      */
-    public Grep(String[] options, OutputStream os, String rootDir) throws ParseException {
+    public Grep(String[] options, OutputStream os) throws ParseException {
         try {
             this.os = os;
             CommandLineParser parser = new DefaultParser();
@@ -122,10 +120,6 @@ public class Grep {
             } else {
                 regexp = "(" + argList.get(0) + ")";
                 this.fileNamePatterns = argList.subList(1, argList.size());
-            }
-            
-            for (int i = 0; i < this.fileNamePatterns.size(); i++) {
-                this.fileNamePatterns.set(i, rootDir + this.fileNamePatterns.get(i));
             }
 
             int flags = 0;
@@ -310,7 +304,7 @@ public class Grep {
     // for command line use
     public static void main(String args[]) {
         try {
-            Grep grep = new Grep(args, System.out, "");
+            Grep grep = new Grep(args, System.out);
             grep.execute();
         } catch (ParseException e) {
             System.err.println(e.getMessage());

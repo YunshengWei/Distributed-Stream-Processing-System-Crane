@@ -153,10 +153,8 @@ public class GossipGroupMembershipService implements DaemonService {
         Logger logger = null;
         try {
             logger = Logger.getLogger(GossipGroupMembershipService.class.getName());
-            SimpleFormatter formatter = new SimpleFormatter();
-
             Handler fileHandler = new FileHandler(Catalog.LOG_DIR + Catalog.MEMBERSHIP_SERVICE_LOG);
-            fileHandler.setFormatter(formatter);
+            fileHandler.setFormatter(new SimpleFormatter());
             fileHandler.setLevel(Level.ALL);
             logger.addHandler(fileHandler);
 
@@ -179,11 +177,11 @@ public class GossipGroupMembershipService implements DaemonService {
                 new Identity(InetAddress.getLocalHost(), System.currentTimeMillis()));
         scheduler = Executors.newScheduledThreadPool(2);
 
-        scheduler.scheduleAtFixedRate(new GossipSender(), 0, Catalog.GOSSIP_PERIOD,
-                Catalog.GOSSIP_PERIOD_TIME_UNIT);
+        scheduler.scheduleAtFixedRate(new GossipSender(), 0, Catalog.GOSSIP_GAP,
+                Catalog.TIME_UNIT);
         if (!introducerIP.equals(InetAddress.getLocalHost())) {
             scheduler.scheduleAtFixedRate(new IntroducerNegotiator(), 0,
-                    Catalog.INTRODUCER_NEGOTIATE_PERIOD, Catalog.GOSSIP_PERIOD_TIME_UNIT);
+                    Catalog.INTRODUCER_NEGOTIATE_GAP, Catalog.TIME_UNIT);
         }
         new Thread(new GossipReceiver()).start();
     }

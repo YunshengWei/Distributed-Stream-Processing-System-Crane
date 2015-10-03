@@ -42,7 +42,7 @@ public class Server {
                         @SuppressWarnings("unchecked")
                         String[] args = (String[]) cmd.subList(1, cmd.size()).toArray(new String[0]);
                         ;
-                        new Grep(args, os, Catalog.LOG_DIR).execute();
+                        new Grep(args, os).execute();
                         return;
                     default:
                         // Should never reach here.

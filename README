@@ -2,10 +2,7 @@ This is the project for UIUC CS course: CS425 -- Distributed Systems.
 I (Yunsheng Wei) and Neha Chaube will collaborate on this project.
 We will build a distributed stream processing system in 4 stages.
 
-Stage 1:
-Distributed Log Querier
-
-Usage is described as following:
+Some global descriptions are as following:
 1. First make sure JDK 8 is installed and $PATH and $CLASSPATH is set correctly, if not, type: 
 	make install
 to install JDK 8 and set $PATH and CLASSPATH
@@ -14,21 +11,36 @@ to install JDK 8 and set $PATH and CLASSPATH
 2. To compile, type:
 	make compile
 
-3. To run server, type:
-	java Server <portNumber>
+3. To clean, type:
+	make clean
 
-4. To run local Grep, type:
+4. Parameters for the whole system are stored in src/Catalog.java. Don't forget to recompile
+after making any changes. For simplicity, we do not store them in xml files.
+
+Stage 1:
+Distributed Log Querier
+In stage 1, we developed a distributed log querier, which enables clients to grep files distributedly on
+several servers.
+
+Basic usage:
+1. To run server, type:
+	java LogQueryService
+
+2. To run local Grep, type:
 	java Grep [-options] [pattern] [file ...]
 
 5. To run distributed grep client, type:
 	java RemoteGrepClient [-options] [pattern] [file ...]
 Notice, if file includes wildcard, then it should be enclosed by "" or '' to prevent it from expanded locally. Control information and matched lines are respectively written to stderr and stdout. So it is convenient to redirect IO to split them. :)
 
-6. Server information is stored in conf/host_list
-
 
 Stage 2:
-TODO:
+Distributed Group Membership
+In stage 2, we developed a distributed group membership service based on Gossip Membership Protocol.
+
+Basic usage:
+
+
 
 Stage 3:
 TODO:

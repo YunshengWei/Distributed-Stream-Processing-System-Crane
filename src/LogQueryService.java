@@ -36,7 +36,7 @@ public class LogQueryService implements DaemonService {
                         String[] args = (String[]) cmd.subList(1, cmd.size())
                                 .toArray(new String[0]);
                         ;
-                        new Grep(args, os, Catalog.LOG_DIR).execute();
+                        new Grep(args, os).execute();
                         return;
                     default:
                         // Should never reach here.
@@ -57,19 +57,11 @@ public class LogQueryService implements DaemonService {
 
     }
 
-    private final ServerSocket serverSocket;
-
-    private LogQueryService(ServerSocket serverSocket) {
-        this.serverSocket = serverSocket;
-    }
-
-    public static LogQueryService create(int portNumber) throws IOException {
-        ServerSocket serverSocket = new ServerSocket(portNumber);
-        return new LogQueryService(serverSocket);
-    }
+    private ServerSocket serverSocket;
 
     @Override
-    public void startServe() {
+    public void startServe() throws IOException {
+        serverSocket = new ServerSocket(Catalog.LOG_QUERY_SERVICE_PORT);
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -78,7 +70,6 @@ public class LogQueryService implements DaemonService {
                         new Thread(new GrepWorker(serverSocket.accept())).start();
                     }
                 } catch (IOException e) {
-                    // TODO
                     e.printStackTrace();
                 }
             }
@@ -90,19 +81,12 @@ public class LogQueryService implements DaemonService {
         try {
             serverSocket.close();
         } catch (IOException e) {
-            // TODO
             e.printStackTrace();
         }
     }
     
     public static void main(String[] args) throws IOException {
-        if (args.length != 1) {
-            System.err.println("Usage: java LogQueryService <port number>");
-            System.exit(-1);
-        }
-
-        int portNumber = Integer.parseInt(args[0]);
-        LogQueryService lqs = LogQueryService.create(portNumber);
+        LogQueryService lqs = new LogQueryService();
         lqs.startServe();
     }
 }

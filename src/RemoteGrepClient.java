@@ -21,10 +21,10 @@ import org.json.simple.JSONValue;
 public class RemoteGrepClient {
 
     private static class QueryThread implements Runnable {
-        private final Catalog.Host host;
+        private final String host;
         private final String[] args;
 
-        QueryThread(Catalog.Host host, String[] args) {
+        QueryThread(String host, String[] args) {
             this.host = host;
             this.args = args;
         }
@@ -36,11 +36,11 @@ public class RemoteGrepClient {
          */
         private Socket connect() {
             try {
-                Socket socket = new Socket(host.getIP(), host.getPortNumber());
-                System.err.println(String.format("%s: Connection set up successfully.", host.getHostName()));
+                Socket socket = new Socket(host, Catalog.LOG_QUERY_SERVICE_PORT);
+                System.err.println(String.format("%s: Connection set up successfully.", host));
                 return socket;
             } catch (IOException e) {
-                System.err.println(String.format("%s: Failed to establish connection.", host.getHostName()));
+                System.err.println(String.format("%s: Failed to establish connection.", host));
             }
             return null;
         }
@@ -70,10 +70,10 @@ public class RemoteGrepClient {
 
                 while (sc.hasNext()) {
                     String matchedLine = sc.next();
-                    System.out.println(String.format("%s:%s", host.getHostName(), matchedLine));
+                    System.out.println(String.format("%s:%s", host, matchedLine));
                 }
             } catch (IOException e) {
-                System.err.println(String.format("%s: %s", host.getHostName(), e.getMessage()));
+                System.err.println(String.format("%s: %s", host, e.getMessage()));
             }
         }
 
@@ -85,7 +85,7 @@ public class RemoteGrepClient {
                 socket.close();
             } catch (IOException e) {
             } finally {
-                System.err.println(String.format("%s: Connection closed", host.getHostName()));
+                System.err.println(String.format("%s: Connection closed", host));
             }
         }
 
@@ -100,23 +100,23 @@ public class RemoteGrepClient {
                 close(socket);
 
                 long duration = System.nanoTime() - startTime;
-                System.err.println(String.format("%s: Elapsed time: %ss", host.getHostName(), duration / 1000000000.));
+                System.err.println(String.format("%s: Elapsed time: %ss", host, duration / 1000000000.));
             }
         }
     }
-
+    
     public static void main(String[] args) throws IOException {
         // args errors are detected here,
         // so no invalid commands will be sent to other servers.
         try {
-            Grep grep = new Grep(args, null, "");
+            Grep grep = new Grep(args, null);
 
             if (grep.getFileNamePatterns().isEmpty()) {
                 System.err.println("RemoteGrepClient requires at least one file as arguments.");
                 System.exit(-1);
             }
 
-            for (Catalog.Host host : Catalog.getHosts()) {
+            for (String host : Catalog.HOST_LIST) {
                 new Thread(new QueryThread(host, args)).start();
             }
         } catch (ParseException e) {

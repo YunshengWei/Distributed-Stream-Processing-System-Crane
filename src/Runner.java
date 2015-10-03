@@ -5,9 +5,6 @@ import java.util.Scanner;
 public class Runner {
 
     public static void main(String[] args) throws IOException {
-        // LogQueryService lqs =
-        // LogQueryService.create(Catalog.LOG_QUERY_SERVICE_PORT);
-        // lqs.startServe();
         GossipGroupMembershipService ggms = new GossipGroupMembershipService(
                 InetAddress.getByName(Catalog.INTRODUCER_ADDRESS));
         ggms.startServe();
@@ -17,12 +14,12 @@ public class Runner {
         while ((line = in.nextLine()) != null) {
             if (line.equals("Leave group")) {
                 ggms.stopServe();
-            } else if (line.equals("Stop log query service")) {
-                // lqs.stopServe();
             } else if (line.equals("Join group")) {
                 ggms.startServe();
-            } else {
+            } else if (line.equals("Show membership list")) {
                 System.out.println(ggms.getMembershipList());
+            } else if (line.equals("Show self id")) {
+                System.out.println(ggms.getSelfId());
             }
         }
         in.close();
