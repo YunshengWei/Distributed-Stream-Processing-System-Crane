@@ -42,13 +42,13 @@ public class MembershipList implements Serializable {
 
             switch (toState) {
             case LEAVE:
-                return id.toString() + " leaves the group";
+                return "LEAVE: " + id.toString();
             case FAIL:
-                return id.toString() + " fails";
+                return "FAIL: " + id.toString();
             case ALIVE:
-                return id.toString() + " joins the group";
+                return "JOIN: " + id.toString();
             case CLEANUP:
-                return "cleanup " + id.toString() + " from membership list";
+                return "CLEANUP: " + id.toString();
             default:
                 // should never reach here
                 return null;

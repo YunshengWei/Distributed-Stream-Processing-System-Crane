@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -154,16 +153,13 @@ public class GossipGroupMembershipService implements DaemonService {
         Logger logger = null;
         try {
             logger = Logger.getLogger(GossipGroupMembershipService.class.getName());
+            SimpleFormatter formatter = new SimpleFormatter();
+
             Handler fileHandler = new FileHandler(Catalog.LOG_DIR + Catalog.MEMBERSHIP_SERVICE_LOG);
-            fileHandler.setFormatter(new SimpleFormatter());
+            fileHandler.setFormatter(formatter);
             fileHandler.setLevel(Level.ALL);
-
-            Handler consoleHandler = new ConsoleHandler();
-            consoleHandler.setFormatter(new SimpleFormatter());
-            consoleHandler.setLevel(Level.ALL);
-
             logger.addHandler(fileHandler);
-            logger.addHandler(consoleHandler);
+
         } catch (SecurityException | IOException e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
             System.exit(-1);
@@ -203,8 +199,8 @@ public class GossipGroupMembershipService implements DaemonService {
         }
         recSocket.close();
 
-        synchronized (this) {
-            LOGGER.info(String.format("%s leaves", getSelfId()));
+        synchronized (membershipList) {
+            LOGGER.info("LEAVE: " + getSelfId());
         }
         MembershipList vlm = membershipList.voluntaryLeaveMessage();
         try {
