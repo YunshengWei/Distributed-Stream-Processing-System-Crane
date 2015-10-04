@@ -22,7 +22,7 @@ public class Catalog {
     /** specify the number of leave messages to gossip when voluntarily leave */
     public static final int NUM_LEAVE_GOSSIP = 1;
     /** specify the address of introducer */
-    public static final String INTRODUCER_ADDRESS = "fa15-cs425-g13-01.cs.illinois.edu";
+    public static final String INTRODUCER_ADDRESS = "fa15-cs425-g13-02.cs.illinois.edu";
     /** specify the port number on which membership service is running */
     public static final int MEMBERSHIP_SERVICE_PORT = 60003;
     /** specify the log to which membership service writes */
