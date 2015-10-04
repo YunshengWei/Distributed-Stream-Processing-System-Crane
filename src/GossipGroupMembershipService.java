@@ -10,9 +10,13 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
+import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.Level;
+import java.util.logging.LogManager;
+import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
@@ -148,16 +152,31 @@ public class GossipGroupMembershipService implements DaemonService {
     // java Logger is thread safe
     private final static Logger LOGGER = initializeLogger();
 
+    private static class CustomizedFormatter extends Formatter {
+        @Override
+        public String format(LogRecord record) {
+            return String.format("%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS %2$s%3$s%n",
+                    record.getMillis(), formatMessage(record),
+                    record.getThrown() == null ? "" : record.getThrown());
+        }
+    }
+
     // Initialize logger settings
     private static Logger initializeLogger() {
         Logger logger = null;
         try {
+            LogManager.getLogManager().reset();
             logger = Logger.getLogger(GossipGroupMembershipService.class.getName());
             Handler fileHandler = new FileHandler(Catalog.LOG_DIR + Catalog.MEMBERSHIP_SERVICE_LOG);
-            fileHandler.setFormatter(new SimpleFormatter());
+            fileHandler.setFormatter(new CustomizedFormatter());
             fileHandler.setLevel(Level.ALL);
-            logger.addHandler(fileHandler);
 
+            ConsoleHandler consoleHandler = new ConsoleHandler();
+            consoleHandler.setFormatter(new CustomizedFormatter());
+            consoleHandler.setLevel(Level.ALL);
+
+            logger.addHandler(consoleHandler);
+            logger.addHandler(fileHandler);
         } catch (SecurityException | IOException e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
             System.exit(-1);
@@ -177,8 +196,7 @@ public class GossipGroupMembershipService implements DaemonService {
                 new Identity(InetAddress.getLocalHost(), System.currentTimeMillis()));
         scheduler = Executors.newScheduledThreadPool(2);
 
-        scheduler.scheduleAtFixedRate(new GossipSender(), 0, Catalog.GOSSIP_GAP,
-                Catalog.TIME_UNIT);
+        scheduler.scheduleAtFixedRate(new GossipSender(), 0, Catalog.GOSSIP_GAP, Catalog.TIME_UNIT);
         if (!introducerIP.equals(InetAddress.getLocalHost())) {
             scheduler.scheduleAtFixedRate(new IntroducerNegotiator(), 0,
                     Catalog.INTRODUCER_NEGOTIATE_GAP, Catalog.TIME_UNIT);

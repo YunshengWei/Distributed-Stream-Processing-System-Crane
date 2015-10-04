@@ -12,7 +12,7 @@ public class Catalog {
     /** T_fail in milliseconds */
     public static final long FAIL_TIME = 1200;
     /** gap between gossiping membership list, measured in milliseconds */
-    public static final long GOSSIP_GAP = 250;
+    public static final long GOSSIP_GAP = 200;
     /** gap between negotiating with introducer, measured in milliseconds */
     public static final long INTRODUCER_NEGOTIATE_GAP = 2000;
     /** specify the time unit */
@@ -37,10 +37,10 @@ public class Catalog {
     public static final String[] HOST_LIST = new String[] { "fa15-cs425-g13-01.cs.illinois.edu",
             "fa15-cs425-g13-02.cs.illinois.edu", "fa15-cs425-g13-03.cs.illinois.edu",
             "fa15-cs425-g13-04.cs.illinois.edu", "fa15-cs425-g13-05.cs.illinois.edu",
-            "fa15-cs425-g13-06.cs.illinois.edu", "fa15-cs425-g13-07.cs.illinois.edu", "localhost" };
-    
-    /** other global settings*/
-    
+            "fa15-cs425-g13-06.cs.illinois.edu", "fa15-cs425-g13-07.cs.illinois.edu" };
+
+    /** other global settings */
+
     /** specify the root directory for logs */
     public static final String LOG_DIR = "log/";
     /** Specify the character encoding used by the whole system */
