@@ -5,7 +5,7 @@ We will build a distributed stream processing system in 4 stages.
 Some global descriptions are as following:
 1. First make sure JDK 8 is installed and $PATH and $CLASSPATH is set correctly, if not, type: 
 	make install
-to install JDK 8 and set $PATH and CLASSPATH
+to install JDK 8 and set $PATH and $CLASSPATH
 ($CLASSPATH should include all jars in lib/ and bin/)
 
 2. To compile, type:
@@ -39,7 +39,8 @@ Distributed Group Membership
 In stage 2, we developed a distributed group membership service based on Gossip Membership Protocol.
 
 Basic usage:
-
+1. To run group membership service, type:
+	java GossipGroupMembershipService
 
 
 Stage 3:

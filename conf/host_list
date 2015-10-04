@@ -1,8 +1,0 @@
-<host name>		<IP address>					<port number>
-machine.1		fa15-cs425-g13-01.cs.illinois.edu		60001
-machine.2		fa15-cs425-g13-02.cs.illinois.edu		60001
-machine.3		fa15-cs425-g13-03.cs.illinois.edu		60001
-machine.4		fa15-cs425-g13-04.cs.illinois.edu		60001
-machine.5		fa15-cs425-g13-05.cs.illinois.edu		60001
-machine.6		fa15-cs425-g13-06.cs.illinois.edu		60001
-machine.7		fa15-cs425-g13-07.cs.illinois.edu		60001

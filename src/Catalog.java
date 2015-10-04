@@ -8,11 +8,11 @@ public class Catalog {
     /** Settings for gossip group membership service */
 
     /** T_cleanup in milliseconds */
-    public static final long CLEANUP_TIME = 2700;
+    public static final long CLEANUP_TIME = 4000;
     /** T_fail in milliseconds */
-    public static final long FAIL_TIME = 1200;
+    public static final long FAIL_TIME = 1500;
     /** gap between gossiping membership list, measured in milliseconds */
-    public static final long GOSSIP_GAP = 200;
+    public static final long GOSSIP_GAP = 300;
     /** gap between negotiating with introducer, measured in milliseconds */
     public static final long INTRODUCER_NEGOTIATE_GAP = 2000;
     /** specify the time unit */

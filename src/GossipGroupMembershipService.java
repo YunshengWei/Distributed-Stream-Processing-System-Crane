@@ -7,6 +7,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -18,7 +19,6 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
 
 /**
  * GossipGroupMembershipService is a daemon service, which implements gossip
@@ -253,5 +253,26 @@ public class GossipGroupMembershipService implements DaemonService {
      */
     public Identity getSelfId() {
         return membershipList.getSelfId();
+    }
+
+    public static void main(String[] args) throws IOException {
+        GossipGroupMembershipService ggms = new GossipGroupMembershipService(
+                InetAddress.getByName(Catalog.INTRODUCER_ADDRESS));
+        ggms.startServe();
+
+        Scanner in = new Scanner(System.in);
+        String line;
+        while ((line = in.nextLine()) != null) {
+            if (line.equals("Leave group")) {
+                ggms.stopServe();
+            } else if (line.equals("Join group")) {
+                ggms.startServe();
+            } else if (line.equals("Show membership list")) {
+                System.out.println(ggms.getMembershipList());
+            } else if (line.equals("Show self id")) {
+                System.out.println(ggms.getSelfId());
+            }
+        }
+        in.close();
     }
 }
