@@ -18,7 +18,7 @@ public class Catalog {
     /** specify the time unit */
     public static final TimeUnit TIME_UNIT = TimeUnit.MILLISECONDS;
     /** specify the max packet bytes required for receiving membership list */
-    public static final int MAX_UDP_PACKET_BYTES = 1000;
+    public static final int MAX_UDP_PACKET_BYTES = 5000;
     /** specify the number of leave messages to gossip when voluntarily leave */
     public static final int NUM_LEAVE_GOSSIP = 1;
     /** specify the address of introducer */
