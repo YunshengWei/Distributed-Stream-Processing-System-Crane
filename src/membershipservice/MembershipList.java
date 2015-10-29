@@ -119,7 +119,8 @@ public class MembershipList implements Serializable {
 
     /**
      * Merge with another membership list. Add new members, and update states
-     * for old members.
+     * for old members. If another membership list containing a LEAVE member,
+     * which is not contained in the membership list, then just ignore it.
      * 
      * @param that
      *            the membership list to merge with
@@ -165,8 +166,13 @@ public class MembershipList implements Serializable {
 
         while (j < that.size()) {
             Member m = that.membershipList.get(j++);
-            newml.add(new Member(m.id, m.heartbeatCounter, currentTime, m.state));
-            mscList.add(new MemberStateChange(m.id, m.state));
+            // if state of the member is LEAVE, and it is not in my membership
+            // list, then just ignore it, otherwise there is high probability
+            // to cause LEAVE message to last forever.
+            if (m.state == State.ALIVE) {
+                newml.add(new Member(m.id, m.heartbeatCounter, currentTime, m.state));
+                mscList.add(new MemberStateChange(m.id, m.state));
+            }
         }
 
         membershipList = newml;
