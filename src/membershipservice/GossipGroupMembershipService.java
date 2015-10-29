@@ -1,3 +1,4 @@
+package membershipservice;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -19,6 +20,10 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+
+import system.Catalog;
+import system.DaemonService;
+import system.Identity;
 
 /**
  * GossipGroupMembershipService is a daemon service, which implements gossip

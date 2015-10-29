@@ -1,3 +1,4 @@
+package system;
 import java.io.IOException;
 
 public interface DaemonService {

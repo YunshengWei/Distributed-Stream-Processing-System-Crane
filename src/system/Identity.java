@@ -1,3 +1,4 @@
+package system;
 import java.io.Serializable;
 import java.net.InetAddress;
 
@@ -12,7 +13,7 @@ public final class Identity implements Serializable, Comparable<Identity> {
     public final long timestamp;
     private transient Integer hashCache = null;
 
-    Identity(InetAddress IPAddress, long timestamp) {
+    public Identity(InetAddress IPAddress, long timestamp) {
         this.IPAddress = IPAddress;
         this.timestamp = timestamp;
     }

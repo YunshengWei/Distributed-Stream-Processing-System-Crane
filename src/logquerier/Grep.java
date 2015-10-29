@@ -1,3 +1,4 @@
+package logquerier;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -21,6 +22,8 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+
+import system.Catalog;
 
 /**
  * Grep is a utility which is like UNIX command: egrep.

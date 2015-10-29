@@ -24,13 +24,13 @@ several servers.
 
 Basic usage:
 1. To run server, type:
-	java LogQueryService
+	java logquerier.LogQueryService
 
 2. To run local Grep, type:
-	java Grep [-options] [pattern] [file ...]
+	java logquerier.Grep [-options] [pattern] [file ...]
 
 5. To run distributed grep client, type:
-	java RemoteGrepClient [-options] [pattern] [file ...]
+	java logquerier.RemoteGrepClient [-options] [pattern] [file ...]
 Notice, if file includes wildcard, then it should be enclosed by "" or '' to prevent it from expanded locally. Control information and matched lines are respectively written to stderr and stdout. So it is convenient to redirect IO to split them. :)
 
 
@@ -40,11 +40,14 @@ In stage 2, we developed a distributed group membership service based on Gossip 
 
 Basic usage:
 1. To run group membership service, type:
-	java GossipGroupMembershipService
+	java membershipservice.GossipGroupMembershipService
 
 
 Stage 3:
-TODO:
+In stage 3, we developed a simplified version of Hadoop Distributed File System (HDFS).
+
+Basic usage:
+1.
 
 Stage 4:
 TODO:

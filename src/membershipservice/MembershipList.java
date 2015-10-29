@@ -1,9 +1,13 @@
+package membershipservice;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+
+import system.Catalog;
+import system.Identity;
 
 /**
  * MembershipList is a thread safe class which implements membership list used

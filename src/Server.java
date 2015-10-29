@@ -9,6 +9,9 @@ import org.apache.commons.cli.ParseException;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONValue;
 
+import logquerier.Grep;
+import system.Catalog;
+
 /**
  * This is the main class for Server. ServerThread is a thread within the
  * Server. Its main task is to take the socket, bind and listen on it. It also

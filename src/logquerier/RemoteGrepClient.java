@@ -1,3 +1,4 @@
+package logquerier;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -10,6 +11,8 @@ import java.util.Scanner;
 
 import org.apache.commons.cli.ParseException;
 import org.json.simple.JSONValue;
+
+import system.Catalog;
 
 /**
  * RemoteGrepClient is a client program which sends `grep' command to servers,
