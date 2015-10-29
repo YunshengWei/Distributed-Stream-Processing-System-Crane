@@ -1,4 +1,5 @@
 package membershipservice;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -108,7 +109,7 @@ public class MembershipList implements Serializable {
         membershipList = new ArrayList<>();
         this.selfId = null;
     }
-    
+
     /**
      * @return self's id
      */
@@ -231,14 +232,16 @@ public class MembershipList implements Serializable {
 
     /**
      * @return a MembershipList containing all the non fail members, including
-     *         self and leave nodes (as long as they have not failed, so the
-     *         leave message can be gossiped).
+     *         self and leave nodes (as long as they have not pass the
+     *         FAIL_TIME, so the leave message can be gossiped).
      */
     public synchronized MembershipList getNonFailMembers() {
         MembershipList ml = new MembershipList();
+        long currentTime = System.currentTimeMillis();
 
         for (Member m : membershipList) {
-            if (m.state != State.FAIL) {
+            if (m.state != State.FAIL && !(m.state == State.LEAVE
+                    && currentTime - m.lastUpdateTime > Catalog.FAIL_TIME)) {
                 ml.membershipList.add(m);
             }
 
