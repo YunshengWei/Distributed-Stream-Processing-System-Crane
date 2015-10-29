@@ -6,8 +6,9 @@ install:
 	echo "export CLASSPATH=\$$CLASSPATH:.:bin:lib/*" >> ~/.bash_profile
 
 compile:
+	find -name "*.java" > sources.txt
 	mkdir -p bin
-	javac -d bin src/*.java
+	javac -d bin @sources.txt
 
 clean:
-	rm bin/*.class
+	rm -r bin/*
