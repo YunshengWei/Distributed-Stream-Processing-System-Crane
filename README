@@ -44,7 +44,7 @@ Basic usage:
 
 
 Stage 3:
-In stage 3, we developed a simplified version of Hadoop Distributed File System (HDFS).
+In stage 3, we developed a simple Distributed File System (SDFS). SDFS is a simplified version of HDFS.
 
 Basic usage:
 1.

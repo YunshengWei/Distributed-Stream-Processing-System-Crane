@@ -176,11 +176,11 @@ public class GossipGroupMembershipService implements DaemonService {
             fileHandler.setFormatter(new CustomizedFormatter());
             fileHandler.setLevel(Level.ALL);
 
-            ConsoleHandler consoleHandler = new ConsoleHandler();
+            /*ConsoleHandler consoleHandler = new ConsoleHandler();
             consoleHandler.setFormatter(new CustomizedFormatter());
-            consoleHandler.setLevel(Level.ALL);
+            consoleHandler.setLevel(Level.ALL);*/
 
-            logger.addHandler(consoleHandler);
+            //logger.addHandler(consoleHandler);
             logger.addHandler(fileHandler);
         } catch (SecurityException | IOException e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
