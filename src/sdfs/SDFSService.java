@@ -129,6 +129,19 @@ public class SDFSService implements DaemonService {
         return nameNode;
     }
 
+    /**
+     * Communicate with name node via the specified command, and return the
+     * response from name node. The method abstracts away the chore work to open
+     * and close socket.
+     * 
+     * @param commandType
+     *            one of "put_request", "get_request", "delete"
+     * @param sdfsFileName
+     *            the target file on SDFS
+     * @return the response from name node
+     * @throws IOException
+     *             if fail to communicate with name node
+     */
     private byte[] communicateWithNameNode(String commandType, String sdfsFileName)
             throws IOException {
         Socket socket = new Socket(nameNode.IPAddress, Catalog.SDFS_NAMENODE_PORT);
@@ -142,6 +155,15 @@ public class SDFSService implements DaemonService {
         }
     }
 
+    /**
+     * Read all bytes from the input stream of the given socket.
+     * 
+     * @param socket
+     *            an open socket to read from
+     * @return all received bytes
+     * @throws IOException
+     *             if any error occurs.
+     */
     private byte[] readAllBytes(Socket socket) throws IOException {
         try (BufferedInputStream in = new BufferedInputStream(socket.getInputStream())) {
             byte[] tmp = new byte[1024];

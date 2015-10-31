@@ -1,7 +1,6 @@
 package sdfs;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,8 +39,8 @@ public class CommandEncoder {
             byte[] fileNameBytes = sdfsFileName.getBytes(Catalog.encoding);
 
             // the first byte is payload descriptor, the following 4 bytes is an
-            // integer indicating the file size, all bytes after the file
-            // content are file name.
+            // integer indicating the file size, the following is the file
+            // content, all bytes after the file content are file name.
             ByteBuffer bb = ByteBuffer
                     .allocate(1 + 4 + fileContentBytes.length + fileNameBytes.length);
 
@@ -49,7 +48,7 @@ public class CommandEncoder {
             bb.putInt(fileContentBytes.length);
             bb.put(fileContentBytes);
             bb.put(fileNameBytes);
-            
+
             return bb.array();
         }
         case "replicate":
