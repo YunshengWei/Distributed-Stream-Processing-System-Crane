@@ -134,33 +134,12 @@ public class SDFSService implements DaemonService {
         Socket socket = new Socket(nameNode.IPAddress, Catalog.SDFS_NAMENODE_PORT);
 
         try (OutputStream out = socket.getOutputStream()) {
-            switch (commandType) {
-            case "put_request": {
-                out.write(PayloadDescriptor.getDescriptor("put_request"));
-                return readAllBytes(socket);
-            }
-            case "delete": {
-                byte[] fileNameBytes = sdfsFileName.getBytes(Catalog.encoding);
-                ByteBuffer bb = ByteBuffer.allocate(1 + fileNameBytes.length);
-                bb.put(PayloadDescriptor.getDescriptor("delete"));
-                bb.put(fileNameBytes);
-                out.write(bb.array());
-                return null;
-            }
-            case "get_request": {
-                byte[] fileNameBytes = sdfsFileName.getBytes(Catalog.encoding);
-                ByteBuffer bb = ByteBuffer.allocate(1 + fileNameBytes.length);
-                bb.put(PayloadDescriptor.getDescriptor("get_request"));
-                bb.put(fileNameBytes);
-                out.write(bb.array());
-                return readAllBytes(socket);
-            }
-            }
+            byte[] command = CommandEncoder.encode(commandType, sdfsFileName);
+            out.write(command);
+            return readAllBytes(socket);
         } finally {
             socket.close();
         }
-
-        return null;
     }
 
     private byte[] readAllBytes(Socket socket) throws IOException {
@@ -197,20 +176,7 @@ public class SDFSService implements DaemonService {
         Socket socket = new Socket(dataNode, Catalog.SDFS_DATANODE_PORT);
         try (OutputStream out = socket.getOutputStream();
                 InputStream in = socket.getInputStream()) {
-            Path file = Paths.get(localFileName);
-            byte[] fileContentBytes = Files.readAllBytes(file);
-            byte[] fileNameBytes = sdfsFileName.getBytes(Catalog.encoding);
-            // the first byte is payload descriptor, the following 4 bytes is an
-            // integer indicating the file size, all bytes after the file
-            // content are file name.
-            ByteBuffer bb = ByteBuffer
-                    .allocate(1 + 4 + fileContentBytes.length + fileNameBytes.length);
-
-            bb.put(PayloadDescriptor.getDescriptor("put"));
-            bb.putInt(fileContentBytes.length);
-            bb.put(fileContentBytes);
-            bb.put(fileNameBytes);
-            out.write(bb.array());
+            out.write(CommandEncoder.encode("put", localFileName, sdfsFileName));
 
             int response = socket.getInputStream().read();
             if (response != PayloadDescriptor.getDescriptor("success")) {
@@ -282,11 +248,7 @@ public class SDFSService implements DaemonService {
 
         List<InetAddress> dataNodes = listFileLocations(sdfsFileName);
 
-        byte[] fileNameBytes = sdfsFileName.getBytes(Catalog.encoding);
-        ByteBuffer bb = ByteBuffer.allocate(1 + fileNameBytes.length);
-        bb.put(PayloadDescriptor.getDescriptor("get"));
-        bb.put(fileNameBytes);
-        byte[] command = bb.array();
+        byte[] command = CommandEncoder.encode("get", sdfsFileName);
 
         for (InetAddress dataNode : dataNodes) {
             try {
