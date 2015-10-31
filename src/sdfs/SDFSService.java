@@ -6,10 +6,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -41,22 +40,6 @@ public class SDFSService implements DaemonService {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-            }
-        }
-
-        private byte[] readCommand(Socket socket) throws IOException {
-            try (BufferedInputStream in = new BufferedInputStream(socket.getInputStream())) {
-                byte[] tmp = new byte[1024];
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                while (true) {
-                    int n = in.read(tmp);
-                    if (n < 0) {
-                        break;
-                    } else {
-                        baos.write(tmp, 0, n);
-                    }
-                }
-                return baos.toByteArray();
             }
         }
 
@@ -102,13 +85,13 @@ public class SDFSService implements DaemonService {
                     Catalog.encoding);
             InetAddress IPAddress = (InetAddress) new ObjectInputStream(new ByteArrayInputStream(
                     Arrays.copyOfRange(command, 5 + fileNameLength, command.length))).readObject();
-            Socket socket2 = connectNode(IPAddress, Catalog.SDFS_DATANODE_PORT);
 
+            putFile(Catalog.SDFS_DIR + fileName, fileName, IPAddress);
         }
 
         private void execute(Socket socket) throws IOException, ClassNotFoundException {
             try {
-                byte[] command = readCommand(socket);
+                byte[] command = readAllBytes(socket);
                 String commandType = PayloadDescriptor.getCommand(command[0]);
                 switch (commandType) {
                 case "get":
@@ -146,9 +129,59 @@ public class SDFSService implements DaemonService {
         return nameNode;
     }
 
+    private byte[] communicateWithNameNode(String commandType, String sdfsFileName)
+            throws IOException {
+        Socket socket = new Socket(nameNode.IPAddress, Catalog.SDFS_NAMENODE_PORT);
+
+        try (OutputStream out = socket.getOutputStream()) {
+            switch (commandType) {
+            case "put_request": {
+                out.write(PayloadDescriptor.getDescriptor("put_request"));
+                return readAllBytes(socket);
+            }
+            case "delete": {
+                byte[] fileNameBytes = sdfsFileName.getBytes(Catalog.encoding);
+                ByteBuffer bb = ByteBuffer.allocate(1 + fileNameBytes.length);
+                bb.put(PayloadDescriptor.getDescriptor("delete"));
+                bb.put(fileNameBytes);
+                out.write(bb.array());
+                return null;
+            }
+            case "get_request": {
+                byte[] fileNameBytes = sdfsFileName.getBytes(Catalog.encoding);
+                ByteBuffer bb = ByteBuffer.allocate(1 + fileNameBytes.length);
+                bb.put(PayloadDescriptor.getDescriptor("get_request"));
+                bb.put(fileNameBytes);
+                out.write(bb.array());
+                return readAllBytes(socket);
+            }
+            }
+        } finally {
+            socket.close();
+        }
+
+        return null;
+    }
+
+    private byte[] readAllBytes(Socket socket) throws IOException {
+        try (BufferedInputStream in = new BufferedInputStream(socket.getInputStream())) {
+            byte[] tmp = new byte[1024];
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            while (true) {
+                int n = in.read(tmp);
+                if (n < 0) {
+                    break;
+                } else {
+                    baos.write(tmp, 0, n);
+                }
+            }
+            return baos.toByteArray();
+        }
+    }
+
     /**
-     * Replicate file on this data node to another data node. File can be either
-     * on SDFS or on local FS.
+     * Put file on this data node to another data node. File can be either on
+     * SDFS or on local FS.
      * 
      * @param localFileName
      *            the file to transfer (including path relative to root
@@ -159,53 +192,34 @@ public class SDFSService implements DaemonService {
      *            the destination of the file
      * @throws IOException
      */
-    private void replicateFile(String localFileName, String sdfsFileName, Identity dataNode)
+    private void putFile(String localFileName, String sdfsFileName, InetAddress dataNode)
             throws IOException {
-        Socket socket = connectNode(dataNode, Catalog.SDFS_DATANODE_PORT);
-        if (socket != null) {
-            try (OutputStream out = socket.getOutputStream();
-                    Scanner in = new Scanner(socket.getInputStream(), Catalog.encoding)) {
-                Path file = Paths.get(localFileName);
-                byte[] fileContentBytes = Files.readAllBytes(file);
-                byte[] fileNameBytes = sdfsFileName.getBytes(Catalog.encoding);
-                // the first 4 bytes is an integer indicating the file size,
-                // all bytes after the file content are file name.
-                ByteBuffer bb = ByteBuffer
-                        .allocate(4 + fileContentBytes.length + fileNameBytes.length);
+        Socket socket = new Socket(dataNode, Catalog.SDFS_DATANODE_PORT);
+        try (OutputStream out = socket.getOutputStream();
+                InputStream in = socket.getInputStream()) {
+            Path file = Paths.get(localFileName);
+            byte[] fileContentBytes = Files.readAllBytes(file);
+            byte[] fileNameBytes = sdfsFileName.getBytes(Catalog.encoding);
+            // the first byte is payload descriptor, the following 4 bytes is an
+            // integer indicating the file size, all bytes after the file
+            // content are file name.
+            ByteBuffer bb = ByteBuffer
+                    .allocate(1 + 4 + fileContentBytes.length + fileNameBytes.length);
 
-                bb.putInt(fileContentBytes.length);
-                bb.put(fileContentBytes);
-                bb.put(fileNameBytes);
-                out.write(bb.array());
+            bb.put(PayloadDescriptor.getDescriptor("put"));
+            bb.putInt(fileContentBytes.length);
+            bb.put(fileContentBytes);
+            bb.put(fileNameBytes);
+            out.write(bb.array());
 
-                if (!in.hasNextLine() || !in.nextLine().equals("success")) {
-                    throw new IOException();
-                }
-            } finally {
-                closeSocket(socket);
+            int response = socket.getInputStream().read();
+            if (response != PayloadDescriptor.getDescriptor("success")) {
+                throw new IOException();
             }
+
+        } finally {
+            socket.close();
         }
-    }
-
-    /**
-     * Fetch file from SDFS.
-     * 
-     * @param fileName
-     *            the file to fetch from SDFS
-     * @param dataNode
-     *            the data node from which to fetch the specified file. The file
-     *            must appear on the data node. (We ignore a lot of extreme
-     *            cases! Otherwise it will be too complicated!)
-     * @return the content of the file as a byte array if success, otherwise
-     *         <code>null</code>.
-     */
-    private byte[] fetchFromDataNode(String fileName, Identity dataNode) {
-        Socket socket = connectNode(dataNode, Catalog.SDFS_DATANODE_PORT);
-        if (socket != null) {
-
-        }
-
-        return null;
     }
 
     /**
@@ -223,95 +237,89 @@ public class SDFSService implements DaemonService {
     }
 
     /**
-     * Connect to the specified IP address and port.
+     * put local file onto SDFS.
      * 
-     * @param ip
-     *            the IP address to connect to
-     * @param port
-     *            the port number
-     * @return the connected socket if success, else <code>null</code>
+     * @param localFileName
+     * @param sdfsFileName
+     * @throws IOExcpetion
+     *             if operation does not succeed.
+     * @throws ClassNotFoundException
      */
-    private Socket connectNode(InetAddress ip, int port) {
-        try {
-            Socket socket = new Socket(ip, port);
-            System.err.format("<%s:%s>: Connection set up successfully.%n", ip, port);
-            return socket;
-        } catch (IOException e) {
-            System.err.format("<%s:%s>: Failed to establish connection.%n", ip, port);
-            return null;
+    public void putFileOnSDFS(String localFileName, String sdfsFileName)
+            throws IOException, ClassNotFoundException {
+
+        @SuppressWarnings("unchecked")
+        List<InetAddress> dataNodes = (ArrayList<InetAddress>) new ObjectInputStream(
+                new ByteArrayInputStream(communicateWithNameNode("put_request", null)))
+                        .readObject();
+        for (InetAddress dataNode : dataNodes) {
+            putFile(localFileName, sdfsFileName, dataNode);
         }
     }
 
-    /** Close the given socket. Require the socket being open. */
-    private void closeSocket(Socket socket) {
-        try {
-            socket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            System.err.format("<%s:%s>: Connection closed", socket.getInetAddress(),
-                    socket.getPort());
-        }
+    /**
+     * Delete file from SDFS.
+     * 
+     * @param sdfsFileName
+     * @throws IOException
+     *             if operation does not succeed.
+     */
+    public void deleteFileFromSDFS(String sdfsFileName) throws IOException {
+        communicateWithNameNode("delete", sdfsFileName);
     }
 
-    public boolean putFileOnSDFS(String localFileName, String sdfsFileName) {
-        Socket socket = connectNode(nameNode, Catalog.SDFS_NAMENODE_PORT);
-        if (socket != null) {
+    /**
+     * Fetch file from SDFS.
+     * 
+     * @param sdfsFileName
+     * @param localFileName
+     * @throws IOException
+     *             if operation does not succeed.
+     * @throws ClassNotFoundException
+     */
+    public void fetchFromSDFS(String sdfsFileName, String localFileName)
+            throws IOException, ClassNotFoundException {
 
-            try (PrintWriter pw = new PrintWriter(
-                    new OutputStreamWriter(socket.getOutputStream(), Catalog.encoding), true)) {
-                pw.println("put");
-                @SuppressWarnings("unchecked")
-                List<Identity> dataNodes = (ArrayList<Identity>) new ObjectInputStream(
-                        socket.getInputStream()).readObject();
-                for (Identity dataNode : dataNodes) {
-                    replicateFile(localFileName, sdfsFileName, dataNode);
+        List<InetAddress> dataNodes = listFileLocations(sdfsFileName);
+
+        byte[] fileNameBytes = sdfsFileName.getBytes(Catalog.encoding);
+        ByteBuffer bb = ByteBuffer.allocate(1 + fileNameBytes.length);
+        bb.put(PayloadDescriptor.getDescriptor("get"));
+        bb.put(fileNameBytes);
+        byte[] command = bb.array();
+
+        for (InetAddress dataNode : dataNodes) {
+            try {
+                Socket socket2 = new Socket(dataNode, Catalog.SDFS_DATANODE_PORT);
+                socket2.getOutputStream().write(command);
+
+                byte[] fileContent = readAllBytes(socket2);
+                Path filePath = Paths.get(Catalog.SDFS_DIR + localFileName);
+                try (OutputStream out2 = new BufferedOutputStream(
+                        Files.newOutputStream(filePath))) {
+                    out2.write(fileContent);
+                    out2.flush();
                 }
-                return true;
+                return;
             } catch (Exception e) {
                 e.printStackTrace();
-            } finally {
-                try {
-                    socket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
             }
         }
-        return false;
+        throw new IOException();
     }
 
-    public boolean deleteFileFromSDFS(String sdfsFileName) {
-        Socket socket = connectNode(nameNode, Catalog.SDFS_NAMENODE_PORT);
-        if (socket != null) {
-            try (PrintWriter pw = new PrintWriter(
-                    new OutputStreamWriter(socket.getOutputStream(), Catalog.encoding), true)) {
-                pw.format("delete %s%n", sdfsFileName);
-                Scanner sc = new Scanner(socket.getInputStream(), Catalog.encoding);
-                String response = sc.nextLine();
-                sc.close();
-                if (response.equals("success")) {
-                    return true;
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                try {
-                    socket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return false;
-    }
-
-    public void fetchFromSDFS(String sdfsFileName, String localFileName) {
-
-    }
-
-    public List<String> listFileLocations() {
-        return null;
+    /**
+     * List all machines where the file is currently replicated on SDFS.
+     * 
+     * @param sdfsFileName
+     * @return the IP address of all machines that store the file
+     */
+    @SuppressWarnings("unchecked")
+    public List<InetAddress> listFileLocations(String sdfsFileName)
+            throws IOException, ClassNotFoundException {
+        return (ArrayList<InetAddress>) new ObjectInputStream(
+                new ByteArrayInputStream(communicateWithNameNode("get_request", sdfsFileName)))
+                        .readObject();
     }
 
     public SDFSService(InetAddress introducerIP) {
