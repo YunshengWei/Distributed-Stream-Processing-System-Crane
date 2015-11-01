@@ -3,11 +3,14 @@ package sdfs;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
 import system.Catalog;
 
@@ -65,7 +68,7 @@ public class SDFSUtils {
     public static byte[] communicateWithNameNode(InetAddress nameNode, String commandType,
             String sdfsFileName) throws IOException {
         try (Socket socket = new Socket(nameNode, Catalog.SDFS_NAMENODE_PORT)) {
-            byte[] command = CommandEncoder.encode(commandType, sdfsFileName);
+            byte[] command = CommandEncoderDecoder.encode(commandType, null, sdfsFileName, null);
             writeAndClose(socket, command);
             return readAllBytes(socket);
         }
@@ -113,9 +116,22 @@ public class SDFSUtils {
     public static void putFile(String localFileName, String sdfsFileName, InetAddress dataNode)
             throws IOException {
         try (Socket socket = new Socket(dataNode, Catalog.SDFS_DATANODE_PORT)) {
-            byte[] command = CommandEncoder.encode("put", localFileName, sdfsFileName);
+            byte[] command = CommandEncoderDecoder.encode("put", localFileName, sdfsFileName, null);
             writeAndClose(socket, command);
             checkSuccessResponse(socket);
         }
+    }
+    
+    /**
+     * @return a list of file names stored on SDFS on the machine
+     */
+    public static List<String> getSDFSFiles() {
+        File[] files = new File(Catalog.SDFS_DIR).listFiles();
+
+        List<String> fileList = new ArrayList<>();
+        for (File file : files) {
+            fileList.add(file.getName());
+        }
+        return fileList;
     }
 }

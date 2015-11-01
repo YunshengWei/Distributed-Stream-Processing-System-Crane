@@ -1,18 +1,14 @@
 package sdfs;
 
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 
 import system.Catalog;
 import system.DaemonService;
@@ -24,11 +20,11 @@ public class SDFSDataNodeService implements DaemonService {
 
     private LeaderElectionService les;
     private ServerSocket serverSocket;
-    
+
     public SDFSDataNodeService(LeaderElectionService les) {
         this.les = les;
     }
-    
+
     private class DataNodeWorker implements Runnable {
 
         @Override
@@ -44,56 +40,44 @@ public class SDFSDataNodeService implements DaemonService {
         }
 
         private void executeGet(Socket socket, byte[] command) throws IOException {
-            String fileName = new String(Arrays.copyOfRange(command, 1, command.length),
-                    Catalog.encoding);
+            String fileName = CommandEncoderDecoder.getFileName(command);
             Path filePath = Paths.get(Catalog.SDFS_DIR + fileName);
             byte[] fileContent = Files.readAllBytes(filePath);
-            try (BufferedOutputStream out = new BufferedOutputStream(socket.getOutputStream())) {
-                out.write(fileContent);
-                out.flush();
-            }
+            SDFSUtils.writeAndClose(socket, fileContent);
         }
 
         private void executeDelete(Socket socket, byte[] command) throws IOException {
-            String fileName = new String(Arrays.copyOfRange(command, 1, command.length));
+            String fileName = CommandEncoderDecoder.getFileName(command);
             Path filePath = Paths.get(Catalog.SDFS_DIR + fileName);
             Files.deleteIfExists(filePath);
-            try (OutputStream out = socket.getOutputStream()) {
-                out.write(PayloadDescriptor.getDescriptor("success"));
-            }
+            SDFSUtils.writeAndClose(socket,
+                    new byte[] { PayloadDescriptor.getDescriptor("success") });
         }
 
         private void executePut(Socket socket, byte[] command) throws IOException {
-            int fileSize = ByteBuffer.wrap(command, 1, 4).getInt();
-            byte[] fileContent = Arrays.copyOfRange(command, 5, 5 + fileSize);
-            String fileName = new String(Arrays.copyOfRange(command, 5 + fileSize, command.length),
-                    Catalog.encoding);
+            byte[] fileContent = CommandEncoderDecoder.getFileContent(command);
+            String fileName = CommandEncoderDecoder.getFileName(command);
+
             Path filePath = Paths.get(Catalog.SDFS_DIR + fileName);
             try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(filePath))) {
                 out.write(fileContent);
                 out.flush();
             }
-            try (OutputStream out = socket.getOutputStream()) {
-                out.write(PayloadDescriptor.getDescriptor("success"));
-            }
+            SDFSUtils.writeAndClose(socket,
+                    new byte[] { PayloadDescriptor.getDescriptor("success") });
         }
 
         private void executeReplicate(Socket socket, byte[] command)
                 throws IOException, ClassNotFoundException {
-            int fileNameLength = ByteBuffer.wrap(command, 1, 4).getInt();
-            String fileName = new String(Arrays.copyOfRange(command, 5, 5 + fileNameLength),
-                    Catalog.encoding);
-            InetAddress IPAddress = (InetAddress) new ObjectInputStream(new ByteArrayInputStream(
-                    Arrays.copyOfRange(command, 5 + fileNameLength, command.length))).readObject();
-
-            putFile(Catalog.SDFS_DIR + fileName, fileName, IPAddress);
+            String fileName = CommandEncoderDecoder.getFileName(command);
+            InetAddress dest = CommandEncoderDecoder.getDestination(command);
+            SDFSUtils.putFile(Catalog.SDFS_DIR + fileName, fileName, dest);
         }
 
         private void handle(Socket socket) throws IOException, ClassNotFoundException {
             try {
                 byte[] command = SDFSUtils.readAllBytes(socket);
-                String commandType = PayloadDescriptor.getCommand(command[0]);
-                switch (commandType) {
+                switch (CommandEncoderDecoder.getCommandType(command)) {
                 case "get":
                     executeGet(socket, command);
                     break;
@@ -106,6 +90,8 @@ public class SDFSDataNodeService implements DaemonService {
                 case "replicate":
                     executeReplicate(socket, command);
                     break;
+                default:
+                    throw new UnsupportedOperationException();
                 }
             } finally {
                 socket.close();
@@ -113,7 +99,7 @@ public class SDFSDataNodeService implements DaemonService {
         }
 
     }
-    
+
     @Override
     public void startServe() throws IOException {
         // TODO Auto-generated method stub
