@@ -1,4 +1,5 @@
 package membershipservice;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -7,7 +8,13 @@ import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Observable;
 import java.util.Scanner;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -20,6 +27,7 @@ import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
+import membershipservice.MembershipList.State;
 import system.Catalog;
 import system.DaemonService;
 import system.Identity;
@@ -28,7 +36,35 @@ import system.Identity;
  * GossipGroupMembershipService is a daemon service, which implements gossip
  * membership protocol.
  */
-public class GossipGroupMembershipService implements DaemonService {
+public class GossipGroupMembershipService extends Observable implements DaemonService {
+
+    private void updateFailedNodes(List<MembershipList.MemberStateChange> mscList) {
+        long currentTime = System.currentTimeMillis();
+        synchronized (failedNodes) {
+            for (MembershipList.MemberStateChange msc : mscList) {
+                if (msc.toState == State.FAIL || msc.toState == State.LEAVE) {
+                    failedNodes.put(msc.id, currentTime);
+                } else if (msc.toState == State.LEAVE) {
+                    failedNodes.remove(msc.id);
+                }
+            }
+        }
+
+        List<Identity> failedList = new ArrayList<>();
+        for (Iterator<Map.Entry<Identity, Long>> itr = failedNodes.entrySet().iterator(); itr
+                .hasNext();) {
+            Map.Entry<Identity, Long> entry = itr.next();
+            if (entry.getValue() - currentTime > Catalog.CONFIDENT_FAIL_TIME) {
+                failedList.add(entry.getKey());
+                itr.remove();
+            }
+        }
+
+        if (!failedList.isEmpty()) {
+            setChanged();
+            notifyObservers(failedList);
+        }
+    }
 
     /**
      * GossipSender takes responsibility for gossiping its membership list to
@@ -45,6 +81,7 @@ public class GossipGroupMembershipService implements DaemonService {
                 synchronized (membershipList) {
                     List<MembershipList.MemberStateChange> mscList = membershipList.update();
                     log(mscList);
+                    updateFailedNodes(mscList);
                     id = membershipList.getRandomAliveMember();
                     nfm = membershipList.getNonFailMembers();
                 }
@@ -96,6 +133,7 @@ public class GossipGroupMembershipService implements DaemonService {
                         List<MembershipList.MemberStateChange> mscList = membershipList
                                 .merge(receivedMsl);
                         log(mscList);
+                        updateFailedNodes(mscList);
                     }
                 }
             } catch (IOException e) {
@@ -148,6 +186,8 @@ public class GossipGroupMembershipService implements DaemonService {
         }
     }
 
+    private Map<Identity, Long> failedNodes;
+
     private final InetAddress introducerIP;
     private MembershipList membershipList;
     private DatagramSocket sendSocket;
@@ -175,11 +215,13 @@ public class GossipGroupMembershipService implements DaemonService {
             fileHandler.setFormatter(new CustomizedFormatter());
             fileHandler.setLevel(Level.ALL);
 
-            /*ConsoleHandler consoleHandler = new ConsoleHandler();
-            consoleHandler.setFormatter(new CustomizedFormatter());
-            consoleHandler.setLevel(Level.ALL);*/
+            /*
+             * ConsoleHandler consoleHandler = new ConsoleHandler();
+             * consoleHandler.setFormatter(new CustomizedFormatter());
+             * consoleHandler.setLevel(Level.ALL);
+             */
 
-            //logger.addHandler(consoleHandler);
+            // logger.addHandler(consoleHandler);
             logger.addHandler(fileHandler);
         } catch (SecurityException | IOException e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
@@ -194,6 +236,7 @@ public class GossipGroupMembershipService implements DaemonService {
 
     @Override
     public void startServe() throws IOException {
+        failedNodes = Collections.synchronizedMap(new HashMap<>());
         recSocket = new DatagramSocket(Catalog.MEMBERSHIP_SERVICE_PORT);
         sendSocket = new DatagramSocket();
         membershipList = new MembershipList(
