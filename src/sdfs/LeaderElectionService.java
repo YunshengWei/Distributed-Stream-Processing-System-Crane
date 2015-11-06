@@ -31,7 +31,8 @@ public class LeaderElectionService implements DaemonService {
     }
     
     public Identity getLeaderIdentity() {
-        List<Identity> alive=ggms.getMembershipList().getAliveMembersIncludingSelf();
+        //getting membership list but excluding the client from becoming the leader
+        List<Identity> alive=ggms.getMembershipList().getAliveMembersExceptSelf();
         Collections.sort(alive,new MyComparator());
         System.out.println("Sorted timestamp entries in ascending order");
         for(Identity timestamp:alive)
