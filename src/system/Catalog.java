@@ -1,4 +1,5 @@
 package system;
+
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -26,8 +27,12 @@ public class Catalog {
     public static final String INTRODUCER_ADDRESS = "fa15-cs425-g13-01.cs.illinois.edu";
     /** specify the port number on which membership service is running */
     public static final int MEMBERSHIP_SERVICE_PORT = 60002;
-    /** specify the log to which membership service writes */
+    /** specify the log for membership service */
     public static final String MEMBERSHIP_SERVICE_LOG = "ms.log";
+    /** How long can a node be counted as failed confidently */
+    public static final long CONFIDENT_FAIL_TIME = 8000;
+    /** How long it takes for a new node to join a group */
+    public static final long MEMBER_JOIN_TIME = 3000;
 
     /** Settings for log query service */
 
@@ -39,19 +44,31 @@ public class Catalog {
             "fa15-cs425-g13-02.cs.illinois.edu", "fa15-cs425-g13-03.cs.illinois.edu",
             "fa15-cs425-g13-04.cs.illinois.edu", "fa15-cs425-g13-05.cs.illinois.edu",
             "fa15-cs425-g13-06.cs.illinois.edu", "fa15-cs425-g13-07.cs.illinois.edu" };
-    
+
     /** Settings for Simple Distributed File System */
-    
+
     /** specify the replication factor for SDFS */
     public static final int REPLICATION_FACTOR = 3;
-    /** specify the port number for leader election */
-    public static final int LEADER_ECLECTION_PORT = 60003;
     /** specify the port number of name node service */
     public static final int SDFS_NAMENODE_PORT = 60004;
     /** specify the port number of data node service */
     public static final int SDFS_DATANODE_PORT = 60005;
     /** specify the location where data node stores files */
     public static final String SDFS_DIR = "sdfs/";
+    /** specify the log for SDFS */
+    public static final String SDFS_LOG = "sdfs.log";
+    /**
+     * the delay for data node to send block report to a new elected name node
+     */
+    public static final long BLOCKREPORT_DELAY = 5000;
+    /**
+     * On startup, the NameNode enters a special state called Safemode.
+     * Replication of data blocks does not occur when the NameNode is in the
+     * Safemode state.
+     */
+    public static final long SAFE_MODE_DURATION = 20000;
+    /** the period between successive replication check */
+    public static final long REPLICATION_CHECK_PERIOD = 10000;
     
     /** other global settings */
 
@@ -60,107 +77,3 @@ public class Catalog {
     /** specify the character encoding used by the whole system */
     public static final String encoding = "UTF-8";
 }
-
-// /** the path of the file which keeps host information */
-// private static final String HOST_FILE_PATH = "conf/host_list";
-//
-// /**
-// * Host stores information about a host, including host name, IP address,
-// * and port number.
-// */
-// public static class Host {
-// private final String IP;
-// private final int portNumber;
-// private final String hostName;
-//
-// public Host(String hostName, String IP, int portNumber) {
-// this.IP = IP;
-// this.portNumber = portNumber;
-// this.hostName = hostName;
-// }
-//
-// public String getIP() {
-// return this.IP;
-// }
-//
-// public int getPortNumber() {
-// return this.portNumber;
-// }
-//
-// public String getHostName() {
-// return this.hostName;
-// }
-//
-// @Override
-// public String toString() {
-// return String.format("<%s[%s:%s]>", hostName, IP, portNumber);
-// }
-// }
-//
-//
-// private static final List<Host> hostList = buildHostList();
-// private static final Map<String, Host> hostNameMap = buildHostNameMap();
-//
-// /** Specify the character encoding used by the whole system */
-// public static final String encoding = "UTF-8";
-//
-// /** Build host list from file */
-// private static List<Host> buildHostList() {
-// try (BufferedReader br = new BufferedReader(new
-// FileReader(Catalog.HOST_FILE_PATH))) {
-//
-// List<Host> hostList = new ArrayList<>();
-// // the first line is description, just skip it
-// br.readLine();
-// String line = null;
-//
-// while ((line = br.readLine()) != null) {
-// if (line.trim().length() == 0) {
-// continue;
-// }
-//
-// String[] words = line.split("\\s+");
-// // the format should be in this order:
-// // <host name> <IP address> <port number>
-// String hostName = words[0];
-// String IP = words[1];
-// int portNumber = Integer.parseInt(words[2]);
-// hostList.add(new Host(hostName, IP, portNumber));
-// }
-//
-// return hostList;
-// } catch (Exception e) {
-// e.printStackTrace();
-// System.exit(-1);
-// }
-//
-// // Should never reach here.
-// return null;
-// }
-//
-// /** Build the mapping between host name and host object */
-// private static Map<String, Host> buildHostNameMap() {
-// Map<String, Host> hostNameMap = new HashMap<>();
-// for (Host host : hostList) {
-// hostNameMap.put(host.getHostName(), host);
-// }
-// return hostNameMap;
-// }
-//
-// public static List<Host> getHosts() {
-// return hostList;
-// }
-//
-// public static int getNumHosts() {
-// return hostList.size();
-// }
-//
-// public static Host getHostByName(String hostName) {
-// return hostNameMap.get(hostName);
-// }
-//
-// // unit test
-// public static void main(String[] args) {
-// System.out.println(hostList);
-// System.out.println(getNumHosts());
-// }

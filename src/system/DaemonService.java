@@ -16,5 +16,5 @@ public interface DaemonService {
      * Stop the service. If stop an already stopped service, then the result is
      * unspecified.
      */
-    public void stopServe();
+    public void stopServe() throws Exception;
 }

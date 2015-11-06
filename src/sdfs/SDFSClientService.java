@@ -1,11 +1,6 @@
 package sdfs;
 
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.file.Files;
@@ -55,8 +50,8 @@ public class SDFSClientService implements DaemonService {
         byte[] dataNodesBytes = SDFSUtils.communicateWithNameNode(les.getLeaderIdentity().IPAddress,
                 "put_request", null);
         @SuppressWarnings("unchecked")
-        List<InetAddress> dataNodes = (ArrayList<InetAddress>) new ObjectInputStream(
-                new ByteArrayInputStream(dataNodesBytes)).readObject();
+        List<InetAddress> dataNodes = (ArrayList<InetAddress>) SDFSUtils
+                .deserialize(dataNodesBytes);
         for (InetAddress dataNode : dataNodes) {
             SDFSUtils.putFile(localFileName, sdfsFileName, dataNode);
         }
@@ -95,10 +90,7 @@ public class SDFSClientService implements DaemonService {
 
                 byte[] fileContent = SDFSUtils.readAllBytes(socket);
                 Path filePath = Paths.get(Catalog.SDFS_DIR + localFileName);
-                try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(filePath))) {
-                    out.write(fileContent);
-                    out.flush();
-                }
+                Files.write(filePath, fileContent);
                 return;
             } catch (IOException e) {
                 e.printStackTrace();
@@ -118,12 +110,11 @@ public class SDFSClientService implements DaemonService {
             throws IOException, ClassNotFoundException {
         byte[] dataNodesBytes = SDFSUtils.communicateWithNameNode(les.getLeaderIdentity().IPAddress,
                 "get_request", sdfsFileName);
-        return (ArrayList<InetAddress>) new ObjectInputStream(
-                new ByteArrayInputStream(dataNodesBytes)).readObject();
+        return (ArrayList<InetAddress>) SDFSUtils.deserialize(dataNodesBytes);
     }
-    
+
     /**
-     * @return a list of file names stored on SDFS on the machine
+     * @return all files stored on SDFS on the machine
      */
     public List<String> getSDFSFiles() {
         return SDFSUtils.getSDFSFiles();

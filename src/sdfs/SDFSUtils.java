@@ -2,10 +2,13 @@ package sdfs;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -30,6 +33,21 @@ public class SDFSUtils {
         try (OutputStream out = new BufferedOutputStream(socket.getOutputStream())) {
             out.write(content);
             out.flush();
+        }
+    }
+    
+    public static Object deserialize(byte[] bytes) throws IOException, ClassNotFoundException {
+        try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+                ObjectInputStream ois = new ObjectInputStream(bais)) {
+            return ois.readObject();
+        }
+    }
+    
+    public static byte[] serialize(Object o) throws IOException {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+            oos.writeObject(o);
+            return baos.toByteArray();
         }
     }
 
@@ -123,7 +141,7 @@ public class SDFSUtils {
     }
     
     /**
-     * @return a list of file names stored on SDFS on the machine
+     * @return all files stored on SDFS on the machine
      */
     public static List<String> getSDFSFiles() {
         File[] files = new File(Catalog.SDFS_DIR).listFiles();

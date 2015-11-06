@@ -59,10 +59,7 @@ public class SDFSDataNodeService implements DaemonService {
             String fileName = CommandEncoderDecoder.getFileName(command);
 
             Path filePath = Paths.get(Catalog.SDFS_DIR + fileName);
-            try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(filePath))) {
-                out.write(fileContent);
-                out.flush();
-            }
+            Files.write(filePath, fileContent);
             SDFSUtils.writeAndClose(socket,
                     new byte[] { PayloadDescriptor.getDescriptor("success") });
         }

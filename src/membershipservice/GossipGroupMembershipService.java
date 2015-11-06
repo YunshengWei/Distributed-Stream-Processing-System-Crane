@@ -9,7 +9,9 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -38,13 +40,16 @@ import system.Identity;
  */
 public class GossipGroupMembershipService extends Observable implements DaemonService {
 
-    private void updateFailedNodes(List<MembershipList.MemberStateChange> mscList) {
+    private void notifyMemberChanges(List<MembershipList.MemberStateChange> mscList) {
         long currentTime = System.currentTimeMillis();
+        
+        List<Identity> joiningNodes = new ArrayList<>();
         synchronized (failedNodes) {
             for (MembershipList.MemberStateChange msc : mscList) {
                 if (msc.toState == State.FAIL || msc.toState == State.LEAVE) {
                     failedNodes.put(msc.id, currentTime);
-                } else if (msc.toState == State.LEAVE) {
+                } else if (msc.toState == State.ALIVE) {
+                    joiningNodes.add(msc.id);
                     failedNodes.remove(msc.id);
                 }
             }
@@ -60,9 +65,9 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
             }
         }
 
-        if (!failedList.isEmpty()) {
+        if (!failedList.isEmpty() || !joiningNodes.isEmpty()) {
             setChanged();
-            notifyObservers(failedList);
+            notifyObservers(Arrays.asList(failedList, joiningNodes));
         }
     }
 
@@ -81,7 +86,7 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
                 synchronized (membershipList) {
                     List<MembershipList.MemberStateChange> mscList = membershipList.update();
                     log(mscList);
-                    updateFailedNodes(mscList);
+                    notifyMemberChanges(mscList);
                     id = membershipList.getRandomAliveMember();
                     nfm = membershipList.getNonFailMembers();
                 }
@@ -133,7 +138,7 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
                         List<MembershipList.MemberStateChange> mscList = membershipList
                                 .merge(receivedMsl);
                         log(mscList);
-                        updateFailedNodes(mscList);
+                        notifyMemberChanges(mscList);
                     }
                 }
             } catch (IOException e) {
@@ -196,23 +201,13 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
     // java Logger is thread safe
     private final static Logger LOGGER = initializeLogger();
 
-    private static class CustomizedFormatter extends Formatter {
-        @Override
-        public String format(LogRecord record) {
-            return String.format("%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS %2$s%3$s%n",
-                    record.getMillis(), formatMessage(record),
-                    record.getThrown() == null ? "" : record.getThrown());
-        }
-    }
-
     // Initialize logger settings
     private static Logger initializeLogger() {
         Logger logger = null;
         try {
-            LogManager.getLogManager().reset();
             logger = Logger.getLogger(GossipGroupMembershipService.class.getName());
             Handler fileHandler = new FileHandler(Catalog.LOG_DIR + Catalog.MEMBERSHIP_SERVICE_LOG);
-            fileHandler.setFormatter(new CustomizedFormatter());
+            fileHandler.setFormatter(new system.CustomizedFormatter());
             fileHandler.setLevel(Level.ALL);
 
             /*
@@ -282,10 +277,17 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
     }
 
     /**
-     * @return get a list of alive members in the group including self.
+     * @return a list of alive members in the group including self.
      */
     public List<Identity> getAliveMembers() {
         return membershipList.getAliveMembersIncludingSelf();
+    }
+    
+    /**
+     * @return the oldest alive member in the group including self.
+     */
+    public Identity getOldestAliveMember() {
+        return membershipList.getOldestAliveMember();
     }
 
     /**
@@ -303,6 +305,8 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
     }
 
     public static void main(String[] args) throws IOException {
+        LogManager.getLogManager().reset();
+        
         GossipGroupMembershipService ggms = new GossipGroupMembershipService(
                 InetAddress.getByName(Catalog.INTRODUCER_ADDRESS));
         ggms.startServe();

@@ -111,7 +111,8 @@ public class MembershipList implements Serializable {
     }
 
     /**
-     * @return self's id
+     * @return self's id. This method does not need to be synchronized, because
+     *         selfId is immutable.
      */
     public Identity getSelfId() {
         return selfId;
@@ -202,6 +203,18 @@ public class MembershipList implements Serializable {
         return list;
     }
 
+    public synchronized Identity getOldestAliveMember() {
+        List<Identity> members= getAliveMembersIncludingSelf();
+        Identity oldestMember = Collections.min(members, new Comparator<Identity>() {
+            @Override
+            public int compare(Identity o1, Identity o2) {
+                long t = o1.timestamp - o2.timestamp;
+                return t < 0 ? -1 : t == 0 ? 0 : 1;
+            }
+        });
+        return oldestMember;
+    }
+    
     /**
      * Increment self heart beat counter, and clean up failed members.
      * 
