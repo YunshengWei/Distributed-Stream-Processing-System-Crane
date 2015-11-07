@@ -1,5 +1,6 @@
 package sdfs;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.file.Files;
@@ -9,10 +10,14 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.ArrayList;
 import java.util.List;
 
 import system.Catalog;
 
+/**
+ * Client encapsulates client operations for SDFS.
+ */
 public class Client {
     private LeaderElectionService les;
 
@@ -64,5 +69,15 @@ public class Client {
             throws RemoteException, NotBoundException {
         Namenode namenode = getNamenode();
         return namenode.getFileLocationIPs(file);
+    }
+    
+    public List<String> getSDFSFiles() {
+        File[] files = new File(Catalog.SDFS_DIR).listFiles();
+
+        List<String> fileList = new ArrayList<>();
+        for (File file : files) {
+            fileList.add(file.getName());
+        }
+        return fileList;
     }
 }

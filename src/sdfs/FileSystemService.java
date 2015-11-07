@@ -5,6 +5,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.Scanner;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
@@ -59,9 +60,6 @@ public class FileSystemService implements DaemonService, Observer {
         ggms = new GossipGroupMembershipService(InetAddress.getByName(Catalog.INTRODUCER_ADDRESS));
         les = new LeaderElectionService(ggms, LOGGER);
         dns = new DatanodeService(les, LOGGER);
-        if (les.getLeader().IPAddress.equals(selfIP)) {
-            update(les, les.getLeader());
-        }
         les.addObserver(this);
         client = new Client(les);
     }
@@ -76,13 +74,13 @@ public class FileSystemService implements DaemonService, Observer {
 
     @Override
     public void stopServe() throws Exception {
+        les.deleteObserver(this);
         if (nns != null) {
-            nns.toString();
+            nns.stopServe();
         }
         dns.stopServe();
         les.stopServe();
         ggms.stopServe();
-        les.deleteObserver(this);
     }
 
     @Override
@@ -104,11 +102,46 @@ public class FileSystemService implements DaemonService, Observer {
         return client;
     }
     
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
         LogManager.getLogManager().reset();
         
         FileSystemService fss = new FileSystemService();
         fss.startServe();
         Client client = fss.getClient();
+        
+        Scanner in = new Scanner(System.in);
+        String line;
+        while ((line = in.nextLine()) != null) {
+            if (line.equals("Leave group")) {
+                fss.stopServe();
+            } else if (line.equals("Join group")) {
+                fss.startServe();
+            } else if (line.equals("Show membership list")) {
+                System.out.println(fss.ggms.getMembershipList());
+            } else if (line.equals("Show self id")) {
+                System.out.println(fss.ggms.getSelfId());
+            } else if (line.startsWith("put")) {
+                String[] parts = line.split("\\s+");
+                String localFileName = parts[1];
+                String sdfsFileName = parts[2];
+                client.putFileOnSDFS(localFileName, sdfsFileName);
+            } else if (line.startsWith("get")) {
+                String[] parts = line.split("\\s+");
+                String sdfsFileName = parts[1];
+                String localFileName = parts[2];
+                client.fetchFileFromSDFS(sdfsFileName, localFileName);
+            } else if (line.startsWith("delete")) {
+                String[] parts = line.split("\\s+");
+                String sdfsFileName = parts[1];
+                client.deleteFileFromSDFS(sdfsFileName);
+            } else if (line.equals("store")) {
+                System.out.println(client.getSDFSFiles());
+            } else if (line.startsWith("list")) {
+                String[] parts = line.split("\\s+");
+                String sdfsFileName = parts[1];
+                System.out.println(client.getFileLocations(sdfsFileName));
+            }
+        }
+        in.close();
     }
 }

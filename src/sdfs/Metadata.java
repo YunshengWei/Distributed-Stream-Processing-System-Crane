@@ -158,7 +158,7 @@ public class Metadata {
                 List<InetAddress> tos = getKRandomNodesExcept(numToReplicate,
                         entry.getValue().toArray(new InetAddress[entry.getValue().size()]));
                 if (tos.isEmpty()) {
-                    return null;
+                    continue;
                 } else {
                     List<Object> ret = new ArrayList<>();
                     ret.add(entry.getKey());
