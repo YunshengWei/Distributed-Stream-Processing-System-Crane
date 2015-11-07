@@ -26,6 +26,10 @@ import system.Catalog;
 import system.DaemonService;
 import system.Identity;
 
+/**
+ * DatanodeService is a daemon service running on a data node. It relies on a
+ * LeaderElectionService.
+ */
 public class DatanodeService implements DaemonService, Datanode, Observer {
 
     private final LeaderElectionService les;
@@ -47,6 +51,10 @@ public class DatanodeService implements DaemonService, Datanode, Observer {
         Path filePath = Paths.get(Catalog.SDFS_DIR, fileName);
         Files.write(filePath, fileContent);
         logger.info(String.format("Put file %s on SDFS.", fileName));
+        // Assume name node will not fail at the same time data node fails.
+        // Think about what will happen when a data node fails, and name node
+        // issues replication request, and then name node fails.
+        // It's too complicated, so ignore this case for simplicity.
         namenode.addFile(fileName, selfIP);
     }
 
@@ -72,7 +80,16 @@ public class DatanodeService implements DaemonService, Datanode, Observer {
         Path filePath = Paths.get(Catalog.SDFS_DIR, fileName);
         byte[] fileContent = Files.readAllBytes(filePath);
         for (Datanode datanode : datanodes) {
-            datanode.putFile(fileName, fileContent);
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        datanode.putFile(fileName, fileContent);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }).start();
         }
     }
 
@@ -90,15 +107,13 @@ public class DatanodeService implements DaemonService, Datanode, Observer {
         BlockReport blockreport = new BlockReport(selfIP, stub, fileList);
         namenode.updateMetadate(blockreport);
     }
-    
+
     @Override
-    public void startServe() throws IOException {      
+    public void startServe() throws IOException {
         logger.info("Start datanode service.");
         stub = (Datanode) UnicastRemoteObject.exportObject(this, Catalog.SDFS_DATANODE_PORT);
         scheduler = Executors.newScheduledThreadPool(1);
-        // TODO Something to do here
         les.addObserver(this);
-        update(les, les.getLeader());
     }
 
     @Override

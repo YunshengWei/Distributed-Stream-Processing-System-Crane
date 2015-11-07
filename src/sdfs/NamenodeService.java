@@ -2,7 +2,9 @@ package sdfs;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.rmi.AccessException;
 import java.rmi.NoSuchObjectException;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -21,6 +23,10 @@ import system.Catalog;
 import system.DaemonService;
 import system.Identity;
 
+/**
+ * NamenodeService is a daemon service running on a name node. It relies on a
+ * group membership service.
+ */
 public class NamenodeService implements DaemonService, Namenode, Observer {
 
     private Namenode stub;
@@ -53,6 +59,7 @@ public class NamenodeService implements DaemonService, Namenode, Observer {
     @Override
     public void deleteFile(String fileName) throws RemoteException, IOException {
         List<Datanode> locations = metadata.getFileLocations(fileName);
+        // Assume no failure will happen when client is performing operations.
         for (Datanode datanode : locations) {
             datanode.deleteFile(fileName);
         }
@@ -67,6 +74,8 @@ public class NamenodeService implements DaemonService, Namenode, Observer {
     private class CheckReplication implements Runnable {
         @Override
         public void run() {
+            logger.info("Check replication requirement.");
+
             List<List<Object>> reps = metadata.getReplicationRequest();
             for (List<Object> request : reps) {
                 new Thread(new Runnable() {
@@ -96,16 +105,16 @@ public class NamenodeService implements DaemonService, Namenode, Observer {
         scheduler = Executors.newScheduledThreadPool(1);
         scheduler.scheduleAtFixedRate(new CheckReplication(), Catalog.SAFE_MODE_DURATION,
                 Catalog.REPLICATION_CHECK_PERIOD, Catalog.TIME_UNIT);
+        // TODO
         synchronized (ggms.getMembershipList()) {
             ggms.addObserver(this);
         }
     }
 
     @Override
-    public void stopServe() throws NoSuchObjectException {
-        synchronized (ggms.getMembershipList()) {
-            ggms.deleteObserver(this);
-        }
+    public void stopServe() throws AccessException, RemoteException, NotBoundException {
+        ggms.deleteObserver(this);
+        registry.unbind("namenode");
         UnicastRemoteObject.unexportObject(registry, true);
         UnicastRemoteObject.unexportObject(stub, true);
         scheduler.shutdown();

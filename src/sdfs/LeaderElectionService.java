@@ -2,8 +2,6 @@ package sdfs;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
@@ -17,7 +15,8 @@ import system.Identity;
 /**
  * LeaderElectionService is built on top of GossipGroupMembershipService. When
  * Starting a LeaderElectionService, the underlying GossipGroupMembershipService
- * must already have started.
+ * must already have started. And stopServe should be in reverse order, i.e.,
+ * close LeaderElectionService first, then GossipGroupMembershipService.
  */
 public class LeaderElectionService extends Observable implements DaemonService, Observer {
 

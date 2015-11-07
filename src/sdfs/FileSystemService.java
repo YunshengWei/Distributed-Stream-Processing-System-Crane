@@ -54,8 +54,9 @@ public class FileSystemService implements DaemonService, Observer {
         if (System.getSecurityManager() == null) {
             System.setSecurityManager(new SecurityManager());
         }
+        selfIP = InetAddress.getLocalHost();
+        
         ggms = new GossipGroupMembershipService(InetAddress.getByName(Catalog.INTRODUCER_ADDRESS));
-        selfIP = ggms.getSelfId().IPAddress;
         les = new LeaderElectionService(ggms, LOGGER);
         dns = new DatanodeService(les, LOGGER);
         if (les.getLeader().IPAddress.equals(selfIP)) {
