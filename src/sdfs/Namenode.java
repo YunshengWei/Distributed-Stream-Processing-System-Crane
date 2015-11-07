@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface Namenode extends Remote {
     List<Datanode> getFileLocations(String fileName) throws RemoteException;
-    
+
     List<InetAddress> getFileLocationIPs(String fileName) throws RemoteException;
 
     List<Datanode> putRequest() throws RemoteException;
@@ -17,5 +17,5 @@ public interface Namenode extends Remote {
 
     void updateMetadate(BlockReport blockReport) throws RemoteException;
     
-    void addFile(String file, InetAddress IP) throws RemoteException;
+    void addFile(String fileName, InetAddress address) throws RemoteException;
 }

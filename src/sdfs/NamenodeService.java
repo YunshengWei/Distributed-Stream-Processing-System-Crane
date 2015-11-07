@@ -26,7 +26,7 @@ public class NamenodeService implements DaemonService, Namenode, Observer {
     private Namenode stub;
     private Registry registry;
     private Metadata metadata;
-    private GossipGroupMembershipService ggms;
+    private final GossipGroupMembershipService ggms;
     private ScheduledExecutorService scheduler;
     private final Logger logger;
 
@@ -67,16 +67,22 @@ public class NamenodeService implements DaemonService, Namenode, Observer {
     private class CheckReplication implements Runnable {
         @Override
         public void run() {
-            try {
-                List<Object> request = metadata.getReplicationRequest();
-                if (request != null) {
-                    String file = (String) request.get(0);
-                    Datanode from = (Datanode) request.get(1);
-                    Datanode[] tos = request.subList(2, request.size()).toArray(new Datanode[0]);
-                    from.replicateFile(file, tos);
-                }
-            } catch (Exception e) {
-                logger.log(Level.SEVERE, e.getMessage(), e);
+            List<List<Object>> reps = metadata.getReplicationRequest();
+            for (List<Object> request : reps) {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            String file = (String) request.get(0);
+                            Datanode from = (Datanode) request.get(1);
+                            Datanode[] tos = request.subList(2, request.size())
+                                    .toArray(new Datanode[0]);
+                            from.replicateFile(file, tos);
+                        } catch (Exception e) {
+                            logger.log(Level.SEVERE, e.getMessage(), e);
+                        }
+                    }
+                }).start();
             }
         }
     }

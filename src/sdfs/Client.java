@@ -1,24 +1,68 @@
 package sdfs;
 
+import java.io.IOException;
 import java.net.InetAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.util.List;
 
+import system.Catalog;
+
 public class Client {
-    
-    
-    public void putFileOnSDFS(String localFile, String sdfsFile) {
-        
+    private LeaderElectionService les;
+
+    public Client(LeaderElectionService les) {
+        this.les = les;
     }
-    
-    public void deleteFileFromSDFS(String file) {
-        
+
+    private Namenode getNamenode() throws RemoteException, NotBoundException {
+        Registry registry = LocateRegistry.getRegistry(les.getLeader().IPAddress.toString(),
+                Catalog.SDFS_NAMENODE_PORT);
+        return (Namenode) registry.lookup("namenode");
     }
-    
-    public void fetchFileFromSDFS(String sdfFile, String localFile) {
-        
+
+    public void putFileOnSDFS(String localFile, String sdfsFile)
+            throws NotBoundException, IOException {
+        Namenode namenode = getNamenode();
+        List<Datanode> datanodes = namenode.putRequest();
+        Path filePath = Paths.get(Catalog.SDFS_DIR, localFile);
+        byte[] fileContent = Files.readAllBytes(filePath);
+        for (Datanode datanode : datanodes) {
+            datanode.putFile(sdfsFile, fileContent);
+        }
     }
-    
-    public List<InetAddress> getFileLocations(String file) {
-        return null;
+
+    public void deleteFileFromSDFS(String file) throws NotBoundException, IOException {
+        Namenode namenode = getNamenode();
+        namenode.deleteFile(file);
+
+    }
+
+    public void fetchFileFromSDFS(String sdfsFile, String localFile)
+            throws RemoteException, NotBoundException {
+        Namenode namenode = getNamenode();
+        List<Datanode> datanodes = namenode.getFileLocations(sdfsFile);
+        for (Datanode datanode : datanodes) {
+            try {
+                byte[] fileContent = datanode.getFile(sdfsFile);
+                Path filePath = Paths.get(Catalog.SDFS_DIR + localFile);
+                Files.write(filePath, fileContent);
+                return;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        throw new RemoteException();
+    }
+
+    public List<InetAddress> getFileLocations(String file)
+            throws RemoteException, NotBoundException {
+        Namenode namenode = getNamenode();
+        return namenode.getFileLocationIPs(file);
     }
 }

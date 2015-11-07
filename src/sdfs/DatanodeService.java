@@ -28,7 +28,7 @@ import system.Identity;
 
 public class DatanodeService implements DaemonService, Datanode, Observer {
 
-    private LeaderElectionService les;
+    private final LeaderElectionService les;
     private final InetAddress selfIP;
     private Namenode namenode;
     private final Logger logger;

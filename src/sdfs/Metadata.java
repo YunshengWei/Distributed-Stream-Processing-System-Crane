@@ -2,6 +2,7 @@ package sdfs;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -19,6 +20,12 @@ public class Metadata {
     private Map<String, Set<InetAddress>> fileLocations = new HashMap<>();
     private Map<InetAddress, Set<String>> FilesOnNode = new HashMap<>();
     private Map<InetAddress, Datanode> IP2Datanode = new HashMap<>();
+    /**
+     * record the time a file is first added into the metadata, so that
+     * replication check will not check recent files. So that when the file is
+     * still being transmitted, it will not be mistakenly replicated.
+     */
+    private Map<String, Long> fileAddTime = new HashMap<>();
 
     private synchronized void cleanUp() {
         for (Iterator<Map.Entry<String, Set<InetAddress>>> itr = fileLocations.entrySet()
@@ -26,29 +33,32 @@ public class Metadata {
             Map.Entry<String, Set<InetAddress>> entry = itr.next();
             if (entry.getValue().isEmpty()) {
                 itr.remove();
+                fileAddTime.remove(entry.getKey());
             }
         }
     }
-
-    private synchronized List<InetAddress> getKidlestNodesExcept(int k, InetAddress... addresses) {
+    
+    private synchronized List<InetAddress> getKRandomNodesExcept(int k, InetAddress...addresses) {
         List<InetAddress> nodes = new ArrayList<>(FilesOnNode.keySet());
         for (InetAddress address : addresses) {
             nodes.remove(address);
         }
+        Collections.shuffle(nodes);
+        return nodes.subList(0, Math.min(k, nodes.size()));
+    }
+
+    
+    public synchronized List<Datanode> getKidlestNodes(int k) {
+        List<InetAddress> nodes = new ArrayList<>(FilesOnNode.keySet());
         nodes.sort(new Comparator<InetAddress>() {
             @Override
             public int compare(InetAddress o1, InetAddress o2) {
                 return FilesOnNode.get(o1).size() - FilesOnNode.get(o2).size();
             }
         });
-        return nodes.subList(0, Math.min(k, nodes.size()));
-    }
-
-    public synchronized List<Datanode> getKidlestNodes(int k) {
-        List<InetAddress> nodes = getKidlestNodesExcept(k);
 
         List<Datanode> datanodes = new ArrayList<>();
-        for (InetAddress IP : nodes) {
+        for (InetAddress IP : nodes.subList(0, Math.min(k, nodes.size()))) {
             datanodes.add(IP2Datanode.get(IP));
         }
         return datanodes;
@@ -94,6 +104,7 @@ public class Metadata {
         IP2Datanode.put(blockreport.getIPAddress(), blockreport.getDatanode());
         FilesOnNode.put(blockreport.getIPAddress(), new HashSet<String>(blockreport.getFiles()));
         for (String file : blockreport.getFiles()) {
+            fileAddTime.putIfAbsent(file, System.currentTimeMillis());
             fileLocations.putIfAbsent(file, new HashSet<InetAddress>());
             fileLocations.get(file).add(blockreport.getIPAddress());
         }
@@ -111,6 +122,7 @@ public class Metadata {
     }
 
     public synchronized void deleteFile(String fileName) {
+        fileAddTime.remove(fileName);
         Set<InetAddress> locations = fileLocations.get(fileName);
         if (locations != null) {
             for (InetAddress IP : locations) {
@@ -121,6 +133,7 @@ public class Metadata {
     }
 
     public synchronized void addFile(String file, InetAddress IP) {
+        fileAddTime.putIfAbsent(file, System.currentTimeMillis());
         fileLocations.putIfAbsent(file, new HashSet<InetAddress>());
         fileLocations.get(file).add(IP);
         FilesOnNode.get(IP).add(file);
@@ -129,15 +142,20 @@ public class Metadata {
     /**
      * Check whether there is any file to be replicated.
      * 
-     * @return one file that needs to be replicated. If no file needs to be
-     *         replicated, then return <code>null</code>. return format: String
+     * @return all files that needs to be replicated. return format: String
      *         fileName, Datanode from, Datanode to...
      */
-    public synchronized List<Object> getReplicationRequest() {
+    public synchronized List<List<Object>> getReplicationRequest() {
+        long curTime = System.currentTimeMillis();
+        List<List<Object>> rep = new ArrayList<>();
+        
         for (Map.Entry<String, Set<InetAddress>> entry : fileLocations.entrySet()) {
+            if (curTime - fileAddTime.get(entry.getKey()) < Catalog.REPLICATION_SILENCE_PERIOD) {
+                continue;
+            }
             int numToReplicate = Catalog.REPLICATION_FACTOR - entry.getValue().size();
             if (numToReplicate > 0) {
-                List<InetAddress> tos = getKidlestNodesExcept(numToReplicate,
+                List<InetAddress> tos = getKRandomNodesExcept(numToReplicate,
                         entry.getValue().toArray(new InetAddress[entry.getValue().size()]));
                 if (tos.isEmpty()) {
                     return null;
@@ -150,10 +168,10 @@ public class Metadata {
                         Datanode to = getDatanode(IP);
                         ret.add(to);
                     }
-                    return ret;
+                    rep.add(ret);
                 }
             }
         }
-        return null;
+        return rep;
     }
 }

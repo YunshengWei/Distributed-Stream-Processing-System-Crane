@@ -4,6 +4,10 @@ import java.io.Serializable;
 import java.net.InetAddress;
 import java.util.List;
 
+/**
+ * Block report is sent from data node to name node. It contains
+ * information about all the SDFS files on that data node.
+ */
 public class BlockReport implements Serializable {
 
     private static final long serialVersionUID = 1L;

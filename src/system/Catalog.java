@@ -68,7 +68,9 @@ public class Catalog {
      */
     public static final long SAFE_MODE_DURATION = 20000;
     /** the period between successive replication check */
-    public static final long REPLICATION_CHECK_PERIOD = 10000;
+    public static final long REPLICATION_CHECK_PERIOD = 20000;
+    /** replication check will not touch recently added files until the period passes */
+    public static final long REPLICATION_SILENCE_PERIOD = 10000;
     
     /** other global settings */
 
