@@ -18,7 +18,7 @@ import system.Catalog;
  */
 public class Metadata {
     private Map<String, Set<InetAddress>> fileLocations = new HashMap<>();
-    private Map<InetAddress, Set<String>> FilesOnNode = new HashMap<>();
+    private Map<InetAddress, Set<String>> filesOnNode = new HashMap<>();
     private Map<InetAddress, Datanode> IP2Datanode = new HashMap<>();
     /**
      * record the time a file is first added into the metadata, so that
@@ -39,7 +39,7 @@ public class Metadata {
     }
     
     private synchronized List<InetAddress> getKRandomNodesExcept(int k, InetAddress...addresses) {
-        List<InetAddress> nodes = new ArrayList<>(FilesOnNode.keySet());
+        List<InetAddress> nodes = new ArrayList<>(filesOnNode.keySet());
         for (InetAddress address : addresses) {
             nodes.remove(address);
         }
@@ -49,11 +49,11 @@ public class Metadata {
 
     
     public synchronized List<Datanode> getKidlestNodes(int k) {
-        List<InetAddress> nodes = new ArrayList<>(FilesOnNode.keySet());
+        List<InetAddress> nodes = new ArrayList<>(filesOnNode.keySet());
         nodes.sort(new Comparator<InetAddress>() {
             @Override
             public int compare(InetAddress o1, InetAddress o2) {
-                return FilesOnNode.get(o1).size() - FilesOnNode.get(o2).size();
+                return filesOnNode.get(o1).size() - filesOnNode.get(o2).size();
             }
         });
 
@@ -87,7 +87,7 @@ public class Metadata {
 
     public synchronized void deleteNode(InetAddress IP) {
         IP2Datanode.remove(IP);
-        FilesOnNode.remove(IP);
+        filesOnNode.remove(IP);
         for (Map.Entry<String, Set<InetAddress>> entry : fileLocations.entrySet()) {
             entry.getValue().remove(IP);
         }
@@ -102,7 +102,7 @@ public class Metadata {
 
     public synchronized void mergeBlockReport(BlockReport blockreport) {
         IP2Datanode.put(blockreport.getIPAddress(), blockreport.getDatanode());
-        FilesOnNode.put(blockreport.getIPAddress(), new HashSet<String>(blockreport.getFiles()));
+        filesOnNode.put(blockreport.getIPAddress(), new HashSet<String>(blockreport.getFiles()));
         for (String file : blockreport.getFiles()) {
             fileAddTime.putIfAbsent(file, System.currentTimeMillis());
             fileLocations.putIfAbsent(file, new HashSet<InetAddress>());
@@ -126,7 +126,7 @@ public class Metadata {
         Set<InetAddress> locations = fileLocations.get(fileName);
         if (locations != null) {
             for (InetAddress IP : locations) {
-                FilesOnNode.get(IP).remove(fileName);
+                filesOnNode.get(IP).remove(fileName);
             }
             fileLocations.remove(fileName);
         }
@@ -136,7 +136,7 @@ public class Metadata {
         fileAddTime.putIfAbsent(file, System.currentTimeMillis());
         fileLocations.putIfAbsent(file, new HashSet<InetAddress>());
         fileLocations.get(file).add(IP);
-        FilesOnNode.get(IP).add(file);
+        filesOnNode.get(IP).add(file);
     }
 
     /**
@@ -173,5 +173,10 @@ public class Metadata {
             }
         }
         return rep;
+    }
+    
+    @Override
+    public synchronized String toString() {
+        return String.format("%s%n%s", filesOnNode, fileLocations.toString());
     }
 }

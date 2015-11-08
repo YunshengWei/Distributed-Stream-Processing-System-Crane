@@ -12,6 +12,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import system.Catalog;
 
@@ -19,10 +20,12 @@ import system.Catalog;
  * Client encapsulates client operations for SDFS.
  */
 public class Client {
-    private LeaderElectionService les;
+    private final LeaderElectionService les;
+    private final Logger logger;
 
-    public Client(LeaderElectionService les) {
+    public Client(LeaderElectionService les, Logger logger) {
         this.les = les;
+        this.logger = logger;
     }
 
     private Namenode getNamenode() throws RemoteException, NotBoundException {
@@ -40,12 +43,13 @@ public class Client {
         for (Datanode datanode : datanodes) {
             datanode.putFile(sdfsFile, fileContent);
         }
+        logger.info(String.format("Successfully put %s on SDFS %s.", localFile, sdfsFile));
     }
 
     public void deleteFileFromSDFS(String file) throws NotBoundException, IOException {
         Namenode namenode = getNamenode();
         namenode.deleteFile(file);
-
+        logger.info(String.format("Successfully deleted %s from SDFS.", file));
     }
 
     public void fetchFileFromSDFS(String sdfsFile, String localFile)
@@ -57,6 +61,8 @@ public class Client {
                 byte[] fileContent = datanode.getFile(sdfsFile);
                 Path filePath = Paths.get(localFile);
                 Files.write(filePath, fileContent);
+                logger.info(
+                        String.format("Successfully get %s from SDFS to %s.", sdfsFile, localFile));
                 return;
             } catch (IOException e) {
                 e.printStackTrace();
@@ -70,7 +76,7 @@ public class Client {
         Namenode namenode = getNamenode();
         return namenode.getFileLocationIPs(file);
     }
-    
+
     public List<String> getSDFSFiles() {
         File sdfsFolder = new File(Catalog.SDFS_DIR);
         File[] files = sdfsFolder.listFiles();

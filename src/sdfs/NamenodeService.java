@@ -72,7 +72,7 @@ public class NamenodeService implements DaemonService, Namenode, Observer {
     private class CheckReplication implements Runnable {
         @Override
         public void run() {
-            logger.info("Check replication requirement.");
+            //logger.info("Check replication requirement.");
 
             List<List<Object>> reps = metadata.getReplicationRequest();
             for (List<Object> request : reps) {
@@ -136,4 +136,7 @@ public class NamenodeService implements DaemonService, Namenode, Observer {
         }
     }
 
+    public Metadata getMetadata() {
+        return metadata;
+    }
 }

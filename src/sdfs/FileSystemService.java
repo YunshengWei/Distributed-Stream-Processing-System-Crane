@@ -34,7 +34,7 @@ public class FileSystemService implements DaemonService, Observer {
         try {
             logger = Logger.getLogger(FileSystemService.class.getName());
             logger.setUseParentHandlers(false);
-            
+
             Handler fileHandler = new FileHandler(Catalog.LOG_DIR + Catalog.SDFS_LOG);
             fileHandler.setFormatter(new system.CustomizedFormatter());
             fileHandler.setLevel(Level.ALL);
@@ -64,7 +64,7 @@ public class FileSystemService implements DaemonService, Observer {
         les = new LeaderElectionService(ggms, LOGGER);
         dns = new DatanodeService(les, LOGGER);
         les.addObserver(this);
-        client = new Client(les);
+        client = new Client(les, LOGGER);
     }
 
     @Override
@@ -124,6 +124,10 @@ public class FileSystemService implements DaemonService, Observer {
                 System.out.println(fss.ggms.getSelfId());
             } else if (line.equals("Show leader")) {
                 System.out.println(fss.les.getLeader());
+            } else if (line.equals("Show metadata")) {
+                if (fss.nns != null) {
+                    System.out.println(fss.nns.getMetadata());
+                }
             } else if (line.startsWith("put")) {
                 String[] parts = line.split("\\s+");
                 String localFileName = parts[1];
