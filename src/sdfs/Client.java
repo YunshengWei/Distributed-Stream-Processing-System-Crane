@@ -26,7 +26,7 @@ public class Client {
     }
 
     private Namenode getNamenode() throws RemoteException, NotBoundException {
-        Registry registry = LocateRegistry.getRegistry(les.getLeader().IPAddress.toString(),
+        Registry registry = LocateRegistry.getRegistry(les.getLeader().IPAddress.getHostAddress(),
                 Catalog.SDFS_NAMENODE_PORT);
         return (Namenode) registry.lookup("namenode");
     }
@@ -35,7 +35,7 @@ public class Client {
             throws NotBoundException, IOException {
         Namenode namenode = getNamenode();
         List<Datanode> datanodes = namenode.putRequest();
-        Path filePath = Paths.get(Catalog.SDFS_DIR, localFile);
+        Path filePath = Paths.get(localFile);
         byte[] fileContent = Files.readAllBytes(filePath);
         for (Datanode datanode : datanodes) {
             datanode.putFile(sdfsFile, fileContent);
@@ -55,7 +55,7 @@ public class Client {
         for (Datanode datanode : datanodes) {
             try {
                 byte[] fileContent = datanode.getFile(sdfsFile);
-                Path filePath = Paths.get(Catalog.SDFS_DIR + localFile);
+                Path filePath = Paths.get(localFile);
                 Files.write(filePath, fileContent);
                 return;
             } catch (IOException e) {
@@ -72,11 +72,15 @@ public class Client {
     }
     
     public List<String> getSDFSFiles() {
-        File[] files = new File(Catalog.SDFS_DIR).listFiles();
-
+        File sdfsFolder = new File(Catalog.SDFS_DIR);
+        File[] files = sdfsFolder.listFiles();
         List<String> fileList = new ArrayList<>();
         for (File file : files) {
-            fileList.add(file.getName());
+            String fileName = file.getName();
+            // Assume names of hidden file start with "."
+            if (!fileName.startsWith(".")) {
+                fileList.add(file.getName());
+            }
         }
         return fileList;
     }

@@ -118,7 +118,7 @@ public class DatanodeService implements DaemonService, Datanode, Observer {
 
     @Override
     public void stopServe() throws NoSuchObjectException {
-        UnicastRemoteObject.unexportObject(stub, true);
+        UnicastRemoteObject.unexportObject(this, true);
         les.deleteObserver(this);
         scheduler.shutdown();
     }
@@ -130,7 +130,7 @@ public class DatanodeService implements DaemonService, Datanode, Observer {
             @Override
             public void run() {
                 try {
-                    Registry registry = LocateRegistry.getRegistry(leader.IPAddress.toString(),
+                    Registry registry = LocateRegistry.getRegistry(leader.IPAddress.getHostAddress(),
                             Catalog.SDFS_NAMENODE_PORT);
                     namenode = (Namenode) registry.lookup("namenode");
                     sendBlockReport(namenode);

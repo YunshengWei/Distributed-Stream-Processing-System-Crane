@@ -9,24 +9,16 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Observable;
 import java.util.Scanner;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.FileHandler;
-import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
-import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 import membershipservice.MembershipList.State;
@@ -41,33 +33,16 @@ import system.Identity;
 public class GossipGroupMembershipService extends Observable implements DaemonService {
 
     private void notifyMemberChanges(List<MembershipList.MemberStateChange> mscList) {
-        long currentTime = System.currentTimeMillis();
-        
-        List<Identity> joiningNodes = new ArrayList<>();
-        synchronized (failedNodes) {
-            for (MembershipList.MemberStateChange msc : mscList) {
-                if (msc.toState == State.FAIL || msc.toState == State.LEAVE) {
-                    failedNodes.put(msc.id, currentTime);
-                } else if (msc.toState == State.ALIVE) {
-                    joiningNodes.add(msc.id);
-                    failedNodes.remove(msc.id);
-                }
-            }
-        }
 
         List<Identity> failedList = new ArrayList<>();
-        for (Iterator<Map.Entry<Identity, Long>> itr = failedNodes.entrySet().iterator(); itr
-                .hasNext();) {
-            Map.Entry<Identity, Long> entry = itr.next();
-            if (entry.getValue() - currentTime > Catalog.CONFIDENT_FAIL_TIME) {
-                failedList.add(entry.getKey());
-                itr.remove();
+        for (MembershipList.MemberStateChange msc : mscList) {
+            if (msc.toState == State.CLEANUP) {
+                failedList.add(msc.id);
             }
         }
-
-        if (!failedList.isEmpty() || !joiningNodes.isEmpty()) {
+        if (!failedList.isEmpty()) {
             setChanged();
-            notifyObservers(Arrays.asList(failedList, joiningNodes));
+            notifyObservers(failedList);
         }
     }
 
@@ -191,8 +166,6 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
         }
     }
 
-    private Map<Identity, Long> failedNodes;
-
     private final InetAddress introducerIP;
     private MembershipList membershipList;
     private DatagramSocket sendSocket;
@@ -206,6 +179,8 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
         Logger logger = null;
         try {
             logger = Logger.getLogger(GossipGroupMembershipService.class.getName());
+            logger.setUseParentHandlers(false);
+            
             Handler fileHandler = new FileHandler(Catalog.LOG_DIR + Catalog.MEMBERSHIP_SERVICE_LOG);
             fileHandler.setFormatter(new system.CustomizedFormatter());
             fileHandler.setLevel(Level.ALL);
@@ -219,7 +194,10 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
             // logger.addHandler(consoleHandler);
             logger.addHandler(fileHandler);
         } catch (SecurityException | IOException e) {
-            logger.log(Level.SEVERE, e.getMessage(), e);
+            e.printStackTrace();
+            // In this case logger has not been initialized, so should not use
+            // logger.
+            // logger.log(Level.SEVERE, e.getMessage(), e);
             System.exit(-1);
         }
         return logger;
@@ -231,7 +209,6 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
 
     @Override
     public void startServe() throws IOException {
-        failedNodes = Collections.synchronizedMap(new HashMap<>());
         recSocket = new DatagramSocket(Catalog.MEMBERSHIP_SERVICE_PORT);
         sendSocket = new DatagramSocket();
         membershipList = new MembershipList(
@@ -282,7 +259,7 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
     public List<Identity> getAliveMembers() {
         return membershipList.getAliveMembersIncludingSelf();
     }
-    
+
     /**
      * @return the oldest alive member in the group including self.
      */
@@ -306,7 +283,7 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
 
     public static void main(String[] args) throws IOException {
         LogManager.getLogManager().reset();
-        
+
         GossipGroupMembershipService ggms = new GossipGroupMembershipService(
                 InetAddress.getByName(Catalog.INTRODUCER_ADDRESS));
         ggms.startServe();

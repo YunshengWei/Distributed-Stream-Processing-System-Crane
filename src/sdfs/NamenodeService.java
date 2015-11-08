@@ -3,7 +3,6 @@ package sdfs;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.rmi.AccessException;
-import java.rmi.NoSuchObjectException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -29,7 +28,6 @@ import system.Identity;
  */
 public class NamenodeService implements DaemonService, Namenode, Observer {
 
-    private Namenode stub;
     private Registry registry;
     private Metadata metadata;
     private final GossipGroupMembershipService ggms;
@@ -99,7 +97,7 @@ public class NamenodeService implements DaemonService, Namenode, Observer {
     @Override
     public void startServe() throws IOException {
         this.metadata = new Metadata();
-        stub = (Namenode) UnicastRemoteObject.exportObject(this, 0);
+        Namenode stub = (Namenode) UnicastRemoteObject.exportObject(this, 0);
         registry = LocateRegistry.createRegistry(Catalog.SDFS_NAMENODE_PORT);
         registry.rebind("namenode", stub);
         scheduler = Executors.newScheduledThreadPool(1);
@@ -116,7 +114,7 @@ public class NamenodeService implements DaemonService, Namenode, Observer {
         ggms.deleteObserver(this);
         registry.unbind("namenode");
         UnicastRemoteObject.unexportObject(registry, true);
-        UnicastRemoteObject.unexportObject(stub, true);
+        UnicastRemoteObject.unexportObject(this, true);
         scheduler.shutdown();
     }
 
@@ -128,7 +126,7 @@ public class NamenodeService implements DaemonService, Namenode, Observer {
     @Override
     public void update(Observable o, Object arg) {
         @SuppressWarnings("unchecked")
-        List<Identity> failedNodes = ((ArrayList<ArrayList<Identity>>) arg).get(0);
+        List<Identity> failedNodes = (ArrayList<Identity>) arg;
         if (!failedNodes.isEmpty()) {
             List<InetAddress> addresses = new ArrayList<>();
             for (Identity id : failedNodes) {

@@ -114,7 +114,7 @@ public class LeaderElectionService extends Observable implements DaemonService, 
         // For simplicity, assume we will always elect the eldest member as the
         // leader, i.e., it will not be detected
         // as failure when at first election.
-        List<Identity> failedNodes = ((ArrayList<ArrayList<Identity>>) arg).get(0);
+        List<Identity> failedNodes = (ArrayList<Identity>) arg;
         if (failedNodes.contains(leader)) {
             Identity oldestMember = ggms.getOldestAliveMember();
             logger.info(String.format("Old leader %s failed.", leader));

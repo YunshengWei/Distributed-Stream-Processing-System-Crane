@@ -14,7 +14,7 @@ public class Catalog {
     /** T_fail in milliseconds */
     public static final long FAIL_TIME = 2000;
     /** gap between gossiping membership list, measured in milliseconds */
-    public static final long GOSSIP_GAP = 200;
+    public static final long GOSSIP_GAP = 150;
     /** gap between negotiating with introducer, measured in milliseconds */
     public static final long INTRODUCER_NEGOTIATE_GAP = 2000;
     /** specify the time unit */
@@ -29,8 +29,6 @@ public class Catalog {
     public static final int MEMBERSHIP_SERVICE_PORT = 60002;
     /** specify the log for membership service */
     public static final String MEMBERSHIP_SERVICE_LOG = "ms.log";
-    /** How long can a node be counted as failed confidently */
-    public static final long CONFIDENT_FAIL_TIME = 8000;
     /** How long it takes for a new node to join a group */
     public static final long MEMBER_JOIN_TIME = 3000;
 
