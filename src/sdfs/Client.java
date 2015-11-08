@@ -12,6 +12,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import system.Catalog;
@@ -65,7 +66,7 @@ public class Client {
                         String.format("Successfully get %s from SDFS to %s.", sdfsFile, localFile));
                 return;
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.log(Level.SEVERE, e.getMessage(), e);
             }
         }
         throw new RemoteException();
