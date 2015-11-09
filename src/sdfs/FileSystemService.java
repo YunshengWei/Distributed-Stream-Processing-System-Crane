@@ -114,8 +114,10 @@ public class FileSystemService implements DaemonService, Observer {
         Scanner in = new Scanner(System.in);
         String line;
         while ((line = in.nextLine()) != null) {
+            try {
             if (line.equals("Leave group")) {
                 fss.stopServe();
+                LOGGER.info("Current time.");
             } else if (line.equals("Join group")) {
                 fss.startServe();
             } else if (line.equals("Show membership list")) {
@@ -149,6 +151,10 @@ public class FileSystemService implements DaemonService, Observer {
                 String sdfsFileName = parts[1];
                 System.out.println(client.getFileLocations(sdfsFileName));
             }
+            } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, e.getMessage(), e);
+            }
+            
         }
         in.close();
     }

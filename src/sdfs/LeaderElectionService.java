@@ -80,6 +80,7 @@ public class LeaderElectionService extends Observable implements DaemonService, 
         // The worst race condition is that when the service has stopped, it is
         // notified one more time, but it's fine.
         ggms.deleteObserver(this);
+        this.leader = null;
     }
 
     @SuppressWarnings("unchecked")

@@ -44,10 +44,11 @@ Basic usage:
 
 
 Stage 3:
-In stage 3, we developed a simple Distributed File System (SDFS). SDFS is a simplified version of HDFS.
+In stage 3, we developed a simple Distributed File System (SDFS). SDFS is a simplified version of HDFS. It is built on top of group membership service, leader election service. data node service, and name node service.
 
 Basic usage:
-1.
+1. To run SDFS, type:
+	java sdfs.FileSystemService
 
 Stage 4:
 TODO:
