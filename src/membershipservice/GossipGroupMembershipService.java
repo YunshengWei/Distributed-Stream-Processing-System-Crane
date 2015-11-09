@@ -180,7 +180,7 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
         try {
             logger = Logger.getLogger(GossipGroupMembershipService.class.getName());
             logger.setUseParentHandlers(false);
-            
+
             Handler fileHandler = new FileHandler(Catalog.LOG_DIR + Catalog.MEMBERSHIP_SERVICE_LOG);
             fileHandler.setFormatter(new system.CustomizedFormatter());
             fileHandler.setLevel(Level.ALL);
@@ -226,11 +226,8 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
     @Override
     public void stopServe() {
         scheduler.shutdown();
-        try {
-            // Wait a while for existing tasks to terminate
-            scheduler.awaitTermination(2, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-
+        // Wait until all tasks finish
+        while (!scheduler.isTerminated()) {
         }
         recSocket.close();
 

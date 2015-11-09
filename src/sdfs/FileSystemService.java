@@ -20,11 +20,11 @@ import system.Identity;
 
 public class FileSystemService implements DaemonService, Observer {
 
-    private DatanodeService dns;
+    private final DatanodeService dns;
     private NamenodeService nns;
-    private Client client;
-    private GossipGroupMembershipService ggms;
-    private LeaderElectionService les;
+    private final Client client;
+    private final GossipGroupMembershipService ggms;
+    private final LeaderElectionService les;
     private final InetAddress selfIP;
 
     private final static Logger LOGGER = initializeLogger();
@@ -154,7 +154,6 @@ public class FileSystemService implements DaemonService, Observer {
             } catch (Exception e) {
                 LOGGER.log(Level.SEVERE, e.getMessage(), e);
             }
-            
         }
         in.close();
     }

@@ -37,8 +37,8 @@ public class Metadata {
             }
         }
     }
-    
-    private synchronized List<InetAddress> getKRandomNodesExcept(int k, InetAddress...addresses) {
+
+    private synchronized List<InetAddress> getKRandomNodesExcept(int k, InetAddress... addresses) {
         List<InetAddress> nodes = new ArrayList<>(filesOnNode.keySet());
         for (InetAddress address : addresses) {
             nodes.remove(address);
@@ -47,7 +47,6 @@ public class Metadata {
         return nodes.subList(0, Math.min(k, nodes.size()));
     }
 
-    
     public synchronized List<Datanode> getKidlestNodes(int k) {
         List<InetAddress> nodes = new ArrayList<>(filesOnNode.keySet());
         nodes.sort(new Comparator<InetAddress>() {
@@ -103,8 +102,10 @@ public class Metadata {
     public synchronized void mergeBlockReport(BlockReport blockreport) {
         IP2Datanode.put(blockreport.getIPAddress(), blockreport.getDatanode());
         filesOnNode.put(blockreport.getIPAddress(), new HashSet<String>(blockreport.getFiles()));
+
+        long curTime = System.currentTimeMillis();
         for (String file : blockreport.getFiles()) {
-            fileAddTime.putIfAbsent(file, System.currentTimeMillis());
+            fileAddTime.putIfAbsent(file, curTime);
             fileLocations.putIfAbsent(file, new HashSet<InetAddress>());
             fileLocations.get(file).add(blockreport.getIPAddress());
         }
@@ -133,6 +134,12 @@ public class Metadata {
     }
 
     public synchronized void addFile(String file, InetAddress IP) {
+        // if IP is not in IP2Datanode, which means this comes from last leader,
+        // so just ignore it, because the information will be contained in
+        // blockreport later.
+        if (!IP2Datanode.containsKey(IP)) {
+            return;
+        }
         fileAddTime.putIfAbsent(file, System.currentTimeMillis());
         fileLocations.putIfAbsent(file, new HashSet<InetAddress>());
         fileLocations.get(file).add(IP);
@@ -148,7 +155,7 @@ public class Metadata {
     public synchronized List<List<Object>> getReplicationRequest() {
         long curTime = System.currentTimeMillis();
         List<List<Object>> rep = new ArrayList<>();
-        
+
         for (Map.Entry<String, Set<InetAddress>> entry : fileLocations.entrySet()) {
             if (curTime - fileAddTime.get(entry.getKey()) < Catalog.REPLICATION_SILENCE_PERIOD) {
                 continue;
@@ -174,7 +181,7 @@ public class Metadata {
         }
         return rep;
     }
-    
+
     @Override
     public synchronized String toString() {
         return String.format("%s%n%s", filesOnNode, fileLocations.toString());

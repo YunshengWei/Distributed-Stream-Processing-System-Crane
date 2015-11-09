@@ -55,6 +55,9 @@ public class LeaderElectionService extends Observable implements DaemonService, 
 
     @Override
     public void startServe() throws IOException {
+        // Clean stale leader here instead of in closeServe(), because update()
+        // may still be called after closeServe(). Think about it! Very tricky!
+        this.leader = null;
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -80,39 +83,11 @@ public class LeaderElectionService extends Observable implements DaemonService, 
         // The worst race condition is that when the service has stopped, it is
         // notified one more time, but it's fine.
         ggms.deleteObserver(this);
-        this.leader = null;
     }
 
     @SuppressWarnings("unchecked")
     @Override
     public void update(Observable o, Object arg) {
-
-        // List<Identity> failedNodes = ((ArrayList<ArrayList<Identity>>)
-        // arg).get(0);
-        // List<Identity> joiningNodes = ((ArrayList<ArrayList<Identity>>)
-        // arg).get(1);
-        // if (!joiningNodes.isEmpty()) {
-        // Identity oldestJoiningNode = Collections.min(joiningNodes, new
-        // Comparator<Identity>() {
-        // @Override
-        // public int compare(Identity o1, Identity o2) {
-        // long t = o1.timestamp - o2.timestamp;
-        // return t < 0 ? -1 : t == 0 ? 0 : 1;
-        // }
-        // });
-        // if (oldestJoiningNode.timestamp < leader.timestamp) {
-        // logger.info(String.format("Old leader %s is not the eldest.",
-        // leader));
-        // setLeader(oldestJoiningNode);
-        // }
-        // } else {
-        // if (failedNodes.contains(leader)) {
-        // Identity oldestMember = ggms.getOldestAliveMember();
-        // logger.info(String.format("Old leader %s failed.", leader));
-        // setLeader(oldestMember);
-        // }
-        // }
-
         // For simplicity, assume we will always elect the eldest member as the
         // leader, i.e., it will not be detected
         // as failure when at first election.

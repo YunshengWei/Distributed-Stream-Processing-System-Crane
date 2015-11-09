@@ -121,11 +121,15 @@ public class DatanodeService implements DaemonService, Datanode, Observer {
         UnicastRemoteObject.unexportObject(this, true);
         les.deleteObserver(this);
         scheduler.shutdown();
+        while (!scheduler.isTerminated()) {
+        }
+        namenode = null;
     }
 
     @Override
     public void update(Observable o, Object arg) {
         Identity leader = (Identity) arg;
+        // ensure leader change is in FIFO order
         scheduler.schedule(new Runnable() {
             @Override
             public void run() {
