@@ -1,6 +1,7 @@
 package sdfs;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.file.Files;
@@ -56,10 +57,14 @@ public class Client {
     }
 
     public void fetchFileFromSDFS(String sdfsFile, String localFile)
-            throws RemoteException, NotBoundException {
+            throws RemoteException, NotBoundException, FileNotFoundException {
         logger.info("Operation beginning time.");
         Namenode namenode = getNamenode();
         List<Datanode> datanodes = namenode.getFileLocations(sdfsFile);
+        if (datanodes.isEmpty()) {
+            throw new FileNotFoundException();
+        }
+        
         for (Datanode datanode : datanodes) {
             try {
                 byte[] fileContent = datanode.getFile(sdfsFile);
