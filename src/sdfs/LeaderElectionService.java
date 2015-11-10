@@ -55,13 +55,11 @@ public class LeaderElectionService extends Observable implements DaemonService, 
 
     @Override
     public void startServe() throws IOException {
-        // Clean stale leader here instead of in closeServe(), because update()
-        // may still be called after closeServe(). Think about it! Very tricky!
-        this.leader = null;
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
+                    // Wait for a while for membership list to get stable
                     Thread.sleep(Catalog.MEMBER_JOIN_TIME);
                     // Very tricky here!
                     // When setting the leader, we need to ensure membership
@@ -79,10 +77,12 @@ public class LeaderElectionService extends Observable implements DaemonService, 
 
     @Override
     public void stopServe() {
-        // Observable class in Java already takes care of thread safety
-        // The worst race condition is that when the service has stopped, it is
-        // notified one more time, but it's fine.
-        ggms.deleteObserver(this);
+        // synchronized ggms.getMembershipList() to ensure update() will not be
+        // called once more.
+        synchronized (ggms.getMembershipList()) {
+            ggms.deleteObserver(this);
+        }
+        this.leader = null;
     }
 
     @SuppressWarnings("unchecked")

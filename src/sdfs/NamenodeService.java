@@ -55,11 +55,14 @@ public class NamenodeService implements DaemonService, Namenode, Observer {
     }
 
     @Override
-    public void deleteFile(String fileName) throws RemoteException, IOException {
+    public void deleteFile(String fileName) throws RemoteException {
         List<Datanode> locations = metadata.getFileLocations(fileName);
-        // Assume no failure will happen when client is performing operations.
         for (Datanode datanode : locations) {
-            datanode.deleteFile(fileName);
+            try {
+                datanode.deleteFile(fileName);
+            } catch (IOException e) {
+                logger.log(Level.SEVERE, e.getMessage(), e);
+            }
         }
         metadata.deleteFile(fileName);
     }
@@ -72,7 +75,7 @@ public class NamenodeService implements DaemonService, Namenode, Observer {
     private class CheckReplication implements Runnable {
         @Override
         public void run() {
-            //logger.info("Check replication requirement.");
+            // logger.info("Check replication requirement.");
 
             List<List<Object>> reps = metadata.getReplicationRequest();
             for (List<Object> request : reps) {
@@ -97,25 +100,29 @@ public class NamenodeService implements DaemonService, Namenode, Observer {
     @Override
     public void startServe() throws IOException {
         this.metadata = new Metadata();
+        // Observe group membership service as early as possible to make sure
+        // not to lose any member failure
+        ggms.addObserver(this);
+
         Namenode stub = (Namenode) UnicastRemoteObject.exportObject(this, 0);
         registry = LocateRegistry.createRegistry(Catalog.SDFS_NAMENODE_PORT);
         registry.rebind("namenode", stub);
+
         scheduler = Executors.newScheduledThreadPool(1);
         scheduler.scheduleAtFixedRate(new CheckReplication(), Catalog.SAFE_MODE_DURATION,
                 Catalog.REPLICATION_CHECK_PERIOD, Catalog.TIME_UNIT);
-        // TODO
-        synchronized (ggms.getMembershipList()) {
-            ggms.addObserver(this);
-        }
     }
 
     @Override
     public void stopServe() throws AccessException, RemoteException, NotBoundException {
+        scheduler.shutdown();
+        // Observable class in Java already takes care of thread safety
+        // The worst race condition is that when the service has stopped, it is
+        // notified one more time, but it's fine.
         ggms.deleteObserver(this);
         registry.unbind("namenode");
         UnicastRemoteObject.unexportObject(registry, true);
         UnicastRemoteObject.unexportObject(this, true);
-        scheduler.shutdown();
     }
 
     @Override
@@ -127,13 +134,11 @@ public class NamenodeService implements DaemonService, Namenode, Observer {
     public void update(Observable o, Object arg) {
         @SuppressWarnings("unchecked")
         List<Identity> failedNodes = (ArrayList<Identity>) arg;
-        if (!failedNodes.isEmpty()) {
-            List<InetAddress> addresses = new ArrayList<>();
-            for (Identity id : failedNodes) {
-                addresses.add(id.IPAddress);
-            }
-            metadata.deleteNodes(addresses);
+        List<InetAddress> addresses = new ArrayList<>();
+        for (Identity id : failedNodes) {
+            addresses.add(id.IPAddress);
         }
+        metadata.deleteNodes(addresses);
     }
 
     public Metadata getMetadata() {

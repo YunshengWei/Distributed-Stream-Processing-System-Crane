@@ -51,10 +51,8 @@ public class DatanodeService implements DaemonService, Datanode, Observer {
         Path filePath = Paths.get(Catalog.SDFS_DIR, fileName);
         Files.write(filePath, fileContent);
         logger.info(String.format("Put file %s on SDFS.", fileName));
-        // Assume name node will not fail at the same time data node fails.
-        // Think about what will happen when a data node fails, and name node
-        // issues replication request, and then name node fails.
-        // It's too complicated, so ignore this case for simplicity.
+        // Writes to and reads of a reference is always atomic, no matter on
+        // 64 or 32 bit JVM
         namenode.addFile(fileName, selfIP);
     }
 
@@ -134,8 +132,8 @@ public class DatanodeService implements DaemonService, Datanode, Observer {
             @Override
             public void run() {
                 try {
-                    Registry registry = LocateRegistry.getRegistry(leader.IPAddress.getHostAddress(),
-                            Catalog.SDFS_NAMENODE_PORT);
+                    Registry registry = LocateRegistry.getRegistry(
+                            leader.IPAddress.getHostAddress(), Catalog.SDFS_NAMENODE_PORT);
                     namenode = (Namenode) registry.lookup("namenode");
                     sendBlockReport(namenode);
                 } catch (RemoteException | NotBoundException e) {
