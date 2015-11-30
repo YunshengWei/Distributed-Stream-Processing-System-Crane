@@ -1,4 +1,5 @@
 package system;
+
 import java.io.Serializable;
 import java.net.InetAddress;
 
@@ -39,7 +40,7 @@ public final class Identity implements Serializable, Comparable<Identity> {
     public int compareTo(Identity that) {
         return this.toString().compareTo(that.toString());
     }
-    
+
     public int compareToByIP(Identity that) {
         return this.IPAddress.toString().compareTo(that.IPAddress.toString());
     }

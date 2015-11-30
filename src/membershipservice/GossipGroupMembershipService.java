@@ -57,7 +57,7 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
                 MembershipList nfm = null;
                 // need to use synchronized here, otherwise membership list and
                 // member state changes will be inconsistent
-                synchronized (membershipList) {
+                synchronized (this) {
                     List<MembershipList.MemberStateChange> mscList = membershipList.update();
                     log(mscList);
                     notifyMemberChanges(mscList);
@@ -108,7 +108,7 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
                     ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData());
                     MembershipList receivedMsl = (MembershipList) new ObjectInputStream(bais)
                             .readObject();
-                    synchronized (membershipList) {
+                    synchronized (this) {
                         List<MembershipList.MemberStateChange> mscList = membershipList
                                 .merge(receivedMsl);
                         log(mscList);
@@ -152,7 +152,7 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
 
     }
 
-    private synchronized void log(List<MembershipList.MemberStateChange> mscList) {
+    private void log(List<MembershipList.MemberStateChange> mscList) {
         if (!mscList.isEmpty()) {
             StringBuilder sb = new StringBuilder();
             for (MembershipList.MemberStateChange msc : mscList) {
@@ -230,9 +230,7 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
         }
         recSocket.close();
 
-        synchronized (membershipList) {
-            LOGGER.info("LEAVE: " + getSelfId());
-        }
+        LOGGER.info("LEAVE: " + getSelfId());
         MembershipList vlm = membershipList.voluntaryLeaveMessage();
         try {
             for (int i = 0; i < Catalog.NUM_LEAVE_GOSSIP; i++) {
