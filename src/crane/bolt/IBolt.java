@@ -1,5 +1,7 @@
 package crane.bolt;
 
+import java.io.Serializable;
+
 import crane.topology.IComponent;
 import crane.tuple.Tuple;
 

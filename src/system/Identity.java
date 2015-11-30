@@ -5,17 +5,19 @@ import java.net.InetAddress;
 
 /**
  * Identity is an immutable class that uniquely identifies a member's identity.
- * It is composed of an IP address field and a timestamp field.
+ * It is composed of an IP address field, a port field, and a timestamp field.
  */
 public final class Identity implements Serializable, Comparable<Identity> {
     private static final long serialVersionUID = 1L;
 
     public final InetAddress IPAddress;
     public final long timestamp;
+    public final int port;
     private transient Integer hashCache = null;
 
-    public Identity(InetAddress IPAddress, long timestamp) {
+    public Identity(InetAddress IPAddress, int port, long timestamp) {
         this.IPAddress = IPAddress;
+        this.port = port;
         this.timestamp = timestamp;
     }
 
@@ -27,13 +29,14 @@ public final class Identity implements Serializable, Comparable<Identity> {
             return false;
         } else {
             Identity that = (Identity) obj;
-            return this.IPAddress.equals(that.IPAddress) && this.timestamp == that.timestamp;
+            return this.IPAddress.equals(that.IPAddress) && this.port == that.port
+                    && this.timestamp == that.timestamp;
         }
     }
 
     @Override
     public String toString() {
-        return String.format("%s<%s>", IPAddress.toString(), timestamp);
+        return String.format("%s:%s<%s>", IPAddress.toString(), port, timestamp);
     }
 
     @Override

@@ -23,10 +23,6 @@ public class Catalog {
     public static final int MAX_UDP_PACKET_BYTES = 5000;
     /** specify the number of leave messages to gossip when voluntarily leave */
     public static final int NUM_LEAVE_GOSSIP = 1;
-    /** specify the address of introducer */
-    public static final String INTRODUCER_ADDRESS = "fa15-cs425-g13-01.cs.illinois.edu";
-    /** specify the port number on which membership service is running */
-    public static final int MEMBERSHIP_SERVICE_PORT = 60002;
     /** specify the log for membership service */
     public static final String MEMBERSHIP_SERVICE_LOG = "ms.log";
     /** How long it takes for a new node to join a group */
@@ -48,9 +44,13 @@ public class Catalog {
     /** specify the replication factor for SDFS */
     public static final int REPLICATION_FACTOR = 3;
     /** specify the port number of name node service */
-    public static final int SDFS_NAMENODE_PORT = 60004;
+    public static final int SDFS_NAMENODE_PORT = 60003;
     /** specify the port number of data node service */
-    public static final int SDFS_DATANODE_PORT = 60005;
+    public static final int SDFS_DATANODE_PORT = 60004;
+    /** specify the port number on which membership service is running */
+    public static final int SDFS_MEMBERSHIP_SERVICE_PORT = 60002;
+    /** specify the address of introducer */
+    public static final String INTRODUCER_ADDRESS = "fa15-cs425-g13-01.cs.illinois.edu";
     /** specify the location where data node stores files */
     public static final String SDFS_DIR = "sdfs/";
     /** specify the log for SDFS */
@@ -74,6 +74,9 @@ public class Catalog {
     public static final long REPLICATION_SILENCE_PERIOD = 20000;
 
     /** Settings for Crane */
+    public static final String NIMBUS_ADDRESS = "fa15-cs425-g13-01.cs.illinois.edu";
+    /** specify the port number on which membership service is running */
+    public static final int CRANE_MEMBERSHIP_SERVICE_PORT = 60005;
     
     /** other global settings */
 

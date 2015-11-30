@@ -40,7 +40,7 @@ In stage 2, we developed a distributed group membership service based on Gossip 
 
 Basic usage:
 1. To run group membership service, type:
-	java membershipservice.GossipGroupMembershipService
+	java membershipservice.GossipGroupMembershipService [introducer IP] [introducer port] [self port]
 
 
 Stage 3:
@@ -49,6 +49,11 @@ In stage 3, we developed a simple Distributed File System (SDFS). SDFS is a simp
 Basic usage:
 1. To run SDFS, type:
 	java sdfs.FileSystemService
+SDFS server contains a built-in client.
+SDFS also supports outside clients. However, outside clients assume master node never dies.
+2. To run outside SDFS client, type:
+	java sdfs.OutsideClient [master node IP]
 
 Stage 4:
-TODO:
+In stage 4, we developed a distributed stream processing system called Crane, which is like Apache Storm.
+

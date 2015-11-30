@@ -142,4 +142,18 @@ public class DatanodeService implements DaemonService, Datanode, Observer {
             }
         }, Catalog.BLOCKREPORT_DELAY, Catalog.TIME_UNIT);
     }
+    
+    public List<String> getSDFSFiles() {
+        File sdfsFolder = new File(Catalog.SDFS_DIR);
+        File[] files = sdfsFolder.listFiles();
+        List<String> fileList = new ArrayList<>();
+        for (File file : files) {
+            String fileName = file.getName();
+            // Assume names of hidden file start with "."
+            if (!fileName.startsWith(".")) {
+                fileList.add(file.getName());
+            }
+        }
+        return fileList;
+    }
 }

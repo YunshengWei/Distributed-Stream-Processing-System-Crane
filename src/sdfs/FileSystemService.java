@@ -22,7 +22,7 @@ public class FileSystemService implements DaemonService, Observer {
 
     private final DatanodeService dns;
     private NamenodeService nns;
-    private final Client client;
+    private final InnerClient client;
     private final GossipGroupMembershipService ggms;
     private final LeaderElectionService les;
     private final InetAddress selfIP;
@@ -60,11 +60,16 @@ public class FileSystemService implements DaemonService, Observer {
          */
         selfIP = InetAddress.getLocalHost();
 
-        ggms = new GossipGroupMembershipService(InetAddress.getByName(Catalog.INTRODUCER_ADDRESS));
+        ggms = new GossipGroupMembershipService(InetAddress.getByName(Catalog.INTRODUCER_ADDRESS),
+                Catalog.SDFS_MEMBERSHIP_SERVICE_PORT, Catalog.SDFS_MEMBERSHIP_SERVICE_PORT);
         les = new LeaderElectionService(ggms, LOGGER);
         dns = new DatanodeService(les, LOGGER);
         les.addObserver(this);
-        client = new Client(les, LOGGER);
+        client = new InnerClient(les, LOGGER);
+    }
+
+    public GossipGroupMembershipService getMembershipService() {
+        return this.ggms;
     }
 
     @Override
@@ -145,7 +150,7 @@ public class FileSystemService implements DaemonService, Observer {
                     String sdfsFileName = parts[1];
                     client.deleteFileFromSDFS(sdfsFileName);
                 } else if (line.equals("store")) {
-                    System.out.println(client.getSDFSFiles());
+                    System.out.println(fss.dns.getSDFSFiles());
                 } else if (line.startsWith("list")) {
                     String[] parts = line.split("\\s+");
                     String sdfsFileName = parts[1];

@@ -1,5 +1,7 @@
 package crane.spout;
 
-public interface ISpout {
+import crane.topology.IComponent;
+
+public interface ISpout extends IComponent {
     public void nextTuple();
 }
