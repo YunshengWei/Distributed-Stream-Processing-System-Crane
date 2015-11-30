@@ -26,7 +26,7 @@ public class Catalog {
     /** specify the address of introducer */
     public static final String INTRODUCER_ADDRESS = "fa15-cs425-g13-01.cs.illinois.edu";
     /** specify the port number on which membership service is running */
-    public static final int DEFAULT_MEMBERSHIP_SERVICE_PORT = 60002;
+    public static final int MEMBERSHIP_SERVICE_PORT = 60002;
     /** specify the log for membership service */
     public static final String MEMBERSHIP_SERVICE_LOG = "ms.log";
     /** How long it takes for a new node to join a group */
@@ -51,8 +51,6 @@ public class Catalog {
     public static final int SDFS_NAMENODE_PORT = 60004;
     /** specify the port number of data node service */
     public static final int SDFS_DATANODE_PORT = 60005;
-    /** specify the port number for SDFS group membership service */
-    public static final int DEFAULT_SDFS_GMS_PORT = 60006;
     /** specify the location where data node stores files */
     public static final String SDFS_DIR = "sdfs/";
     /** specify the log for SDFS */
@@ -69,14 +67,9 @@ public class Catalog {
     public static final long SAFE_MODE_DURATION = 20000;
     /** the period between successive replication check */
     public static final long REPLICATION_CHECK_PERIOD = 20000;
-    /**
-     * replication check will not touch recently added files until the period
-     * passes
-     */
+    /** replication check will not touch recently added files until the period passes */
     public static final long REPLICATION_SILENCE_PERIOD = 20000;
-
-    /** Settings for Crane */
-
+    
     /** other global settings */
 
     /** specify the root directory for logs */

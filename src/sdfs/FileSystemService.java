@@ -39,11 +39,11 @@ public class FileSystemService implements DaemonService, Observer {
             fileHandler.setFormatter(new system.CustomizedFormatter());
             fileHandler.setLevel(Level.ALL);
 
-             ConsoleHandler consoleHandler = new ConsoleHandler();
-             consoleHandler.setFormatter(new CustomizedFormatter());
-             consoleHandler.setLevel(Level.ALL);
-            
-             logger.addHandler(consoleHandler);
+            ConsoleHandler consoleHandler = new ConsoleHandler();
+            consoleHandler.setFormatter(new CustomizedFormatter());
+            consoleHandler.setLevel(Level.ALL);
+
+            logger.addHandler(consoleHandler);
             logger.addHandler(fileHandler);
         } catch (SecurityException | IOException e) {
             e.printStackTrace();
@@ -60,8 +60,7 @@ public class FileSystemService implements DaemonService, Observer {
          */
         selfIP = InetAddress.getLocalHost();
 
-        ggms = new GossipGroupMembershipService(InetAddress.getByName(Catalog.INTRODUCER_ADDRESS),
-                Catalog.DEFAULT_SDFS_GMS_PORT, Catalog.DEFAULT_SDFS_GMS_PORT);
+        ggms = new GossipGroupMembershipService(InetAddress.getByName(Catalog.INTRODUCER_ADDRESS));
         les = new LeaderElectionService(ggms, LOGGER);
         dns = new DatanodeService(les, LOGGER);
         les.addObserver(this);
