@@ -64,7 +64,7 @@ public class LeaderElectionService extends Observable implements DaemonService, 
                     // Very tricky here!
                     // When setting the leader, we need to ensure membership
                     // list of group membership service does not change.
-                    synchronized (ggms.getMembershipList()) {
+                    synchronized (ggms) {
                         setLeader(ggms.getOldestAliveMember());
                         ggms.addObserver(LeaderElectionService.this);
                     }
@@ -79,9 +79,7 @@ public class LeaderElectionService extends Observable implements DaemonService, 
     public void stopServe() {
         // synchronized ggms.getMembershipList() to ensure update() will not be
         // called once more.
-        synchronized (ggms.getMembershipList()) {
-            ggms.deleteObserver(this);
-        }
+        ggms.deleteObserver(this);
         this.leader = null;
     }
 

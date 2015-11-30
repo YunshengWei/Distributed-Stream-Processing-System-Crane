@@ -57,7 +57,7 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
                 MembershipList nfm = null;
                 // need to use synchronized here, otherwise membership list and
                 // member state changes will be inconsistent
-                synchronized (membershipList) {
+                synchronized (this) {
                     List<MembershipList.MemberStateChange> mscList = membershipList.update();
                     log(mscList);
                     notifyMemberChanges(mscList);
@@ -65,7 +65,7 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
                     nfm = membershipList.getNonFailMembers();
                 }
                 if (id != null) {
-                    sendMembershipList(nfm, id.IPAddress);
+                    sendMembershipList(nfm, id.IPAddress, id.port);
                 }
             } catch (IOException e) {
                 // Exception means voluntarily leaving,
@@ -84,7 +84,8 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
         public void run() {
             try {
                 // It is ok to not update membership list here
-                sendMembershipList(membershipList.getNonFailMembers(), introducerIP);
+                sendMembershipList(membershipList.getNonFailMembers(), introducerIP,
+                        introducerPort);
             } catch (IOException e) {
                 // Exception means voluntarily leaving,
                 // so it's safe to ignore it.
@@ -108,7 +109,7 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
                     ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData());
                     MembershipList receivedMsl = (MembershipList) new ObjectInputStream(bais)
                             .readObject();
-                    synchronized (membershipList) {
+                    synchronized (this) {
                         List<MembershipList.MemberStateChange> mscList = membershipList
                                 .merge(receivedMsl);
                         log(mscList);
@@ -135,7 +136,8 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
      * @throws IOException
      *             if any IO error occurs
      */
-    private void sendMembershipList(MembershipList ml, InetAddress target) throws IOException {
+    private void sendMembershipList(MembershipList ml, InetAddress target, int port)
+            throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(baos);
         synchronized (ml) {
@@ -144,15 +146,14 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
         byte[] bytes = baos.toByteArray();
         oos.close();
 
-        DatagramPacket packet = new DatagramPacket(bytes, bytes.length, target,
-                Catalog.MEMBERSHIP_SERVICE_PORT);
+        DatagramPacket packet = new DatagramPacket(bytes, bytes.length, target, port);
         synchronized (sendSocket) {
             sendSocket.send(packet);
         }
 
     }
 
-    private synchronized void log(List<MembershipList.MemberStateChange> mscList) {
+    private void log(List<MembershipList.MemberStateChange> mscList) {
         if (!mscList.isEmpty()) {
             StringBuilder sb = new StringBuilder();
             for (MembershipList.MemberStateChange msc : mscList) {
@@ -166,6 +167,8 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
     }
 
     private final InetAddress introducerIP;
+    private final int introducerPort;
+    private final int selfPort;
     private MembershipList membershipList;
     private DatagramSocket sendSocket;
     private DatagramSocket recSocket;
@@ -202,16 +205,19 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
         return logger;
     }
 
-    public GossipGroupMembershipService(InetAddress introducerIP) {
+    public GossipGroupMembershipService(InetAddress introducerIP, int introducerPort,
+            int selfPort) {
         this.introducerIP = introducerIP;
+        this.introducerPort = introducerPort;
+        this.selfPort = selfPort;
     }
 
     @Override
     public void startServe() throws IOException {
-        recSocket = new DatagramSocket(Catalog.MEMBERSHIP_SERVICE_PORT);
+        recSocket = new DatagramSocket(this.selfPort);
         sendSocket = new DatagramSocket();
         membershipList = new MembershipList(
-                new Identity(InetAddress.getLocalHost(), System.currentTimeMillis()));
+                new Identity(InetAddress.getLocalHost(), System.currentTimeMillis(), selfPort));
         scheduler = Executors.newScheduledThreadPool(2);
 
         scheduler.scheduleAtFixedRate(new GossipSender(), 0, Catalog.GOSSIP_GAP, Catalog.TIME_UNIT);
@@ -230,15 +236,13 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
         }
         recSocket.close();
 
-        synchronized (membershipList) {
-            LOGGER.info("LEAVE: " + getSelfId());
-        }
+        LOGGER.info("LEAVE: " + getSelfId());
         MembershipList vlm = membershipList.voluntaryLeaveMessage();
         try {
             for (int i = 0; i < Catalog.NUM_LEAVE_GOSSIP; i++) {
                 Identity id = membershipList.getRandomAliveMember();
                 if (id != null) {
-                    sendMembershipList(vlm, id.IPAddress);
+                    sendMembershipList(vlm, id.IPAddress, id.port);
                 }
             }
         } catch (IOException e) {
@@ -281,7 +285,8 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
         LogManager.getLogManager().reset();
 
         GossipGroupMembershipService ggms = new GossipGroupMembershipService(
-                InetAddress.getByName(Catalog.INTRODUCER_ADDRESS));
+                InetAddress.getByName(Catalog.INTRODUCER_ADDRESS),
+                Catalog.DEFAULT_MEMBERSHIP_SERVICE_PORT, Catalog.DEFAULT_MEMBERSHIP_SERVICE_PORT);
         ggms.startServe();
 
         Scanner in = new Scanner(System.in);

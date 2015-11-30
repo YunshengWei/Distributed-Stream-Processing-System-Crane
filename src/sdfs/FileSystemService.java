@@ -39,11 +39,11 @@ public class FileSystemService implements DaemonService, Observer {
             fileHandler.setFormatter(new system.CustomizedFormatter());
             fileHandler.setLevel(Level.ALL);
 
-            ConsoleHandler consoleHandler = new ConsoleHandler();
-            consoleHandler.setFormatter(new CustomizedFormatter());
-            consoleHandler.setLevel(Level.ALL);
-
-            logger.addHandler(consoleHandler);
+             ConsoleHandler consoleHandler = new ConsoleHandler();
+             consoleHandler.setFormatter(new CustomizedFormatter());
+             consoleHandler.setLevel(Level.ALL);
+            
+             logger.addHandler(consoleHandler);
             logger.addHandler(fileHandler);
         } catch (SecurityException | IOException e) {
             e.printStackTrace();
@@ -60,7 +60,8 @@ public class FileSystemService implements DaemonService, Observer {
          */
         selfIP = InetAddress.getLocalHost();
 
-        ggms = new GossipGroupMembershipService(InetAddress.getByName(Catalog.INTRODUCER_ADDRESS));
+        ggms = new GossipGroupMembershipService(InetAddress.getByName(Catalog.INTRODUCER_ADDRESS),
+                Catalog.DEFAULT_SDFS_GMS_PORT, Catalog.DEFAULT_SDFS_GMS_PORT);
         les = new LeaderElectionService(ggms, LOGGER);
         dns = new DatanodeService(les, LOGGER);
         les.addObserver(this);
@@ -115,42 +116,42 @@ public class FileSystemService implements DaemonService, Observer {
         String line;
         while ((line = in.nextLine()) != null) {
             try {
-            if (line.equals("Leave group")) {
-                fss.stopServe();
-                LOGGER.info("Current time.");
-            } else if (line.equals("Join group")) {
-                fss.startServe();
-            } else if (line.equals("Show membership list")) {
-                System.out.println(fss.ggms.getMembershipList());
-            } else if (line.equals("Show self id")) {
-                System.out.println(fss.ggms.getSelfId());
-            } else if (line.equals("Show leader")) {
-                System.out.println(fss.les.getLeader());
-            } else if (line.equals("Show metadata")) {
-                if (fss.nns != null) {
-                    System.out.println(fss.nns.getMetadata());
+                if (line.equals("Leave group")) {
+                    fss.stopServe();
+                    LOGGER.info("Current time.");
+                } else if (line.equals("Join group")) {
+                    fss.startServe();
+                } else if (line.equals("Show membership list")) {
+                    System.out.println(fss.ggms.getMembershipList());
+                } else if (line.equals("Show self id")) {
+                    System.out.println(fss.ggms.getSelfId());
+                } else if (line.equals("Show leader")) {
+                    System.out.println(fss.les.getLeader());
+                } else if (line.equals("Show metadata")) {
+                    if (fss.nns != null) {
+                        System.out.println(fss.nns.getMetadata());
+                    }
+                } else if (line.startsWith("put")) {
+                    String[] parts = line.split("\\s+");
+                    String localFileName = parts[1];
+                    String sdfsFileName = parts[2];
+                    client.putFileOnSDFS(localFileName, sdfsFileName);
+                } else if (line.startsWith("get")) {
+                    String[] parts = line.split("\\s+");
+                    String sdfsFileName = parts[1];
+                    String localFileName = parts[2];
+                    client.fetchFileFromSDFS(sdfsFileName, localFileName);
+                } else if (line.startsWith("delete")) {
+                    String[] parts = line.split("\\s+");
+                    String sdfsFileName = parts[1];
+                    client.deleteFileFromSDFS(sdfsFileName);
+                } else if (line.equals("store")) {
+                    System.out.println(client.getSDFSFiles());
+                } else if (line.startsWith("list")) {
+                    String[] parts = line.split("\\s+");
+                    String sdfsFileName = parts[1];
+                    System.out.println(client.getFileLocations(sdfsFileName));
                 }
-            } else if (line.startsWith("put")) {
-                String[] parts = line.split("\\s+");
-                String localFileName = parts[1];
-                String sdfsFileName = parts[2];
-                client.putFileOnSDFS(localFileName, sdfsFileName);
-            } else if (line.startsWith("get")) {
-                String[] parts = line.split("\\s+");
-                String sdfsFileName = parts[1];
-                String localFileName = parts[2];
-                client.fetchFileFromSDFS(sdfsFileName, localFileName);
-            } else if (line.startsWith("delete")) {
-                String[] parts = line.split("\\s+");
-                String sdfsFileName = parts[1];
-                client.deleteFileFromSDFS(sdfsFileName);
-            } else if (line.equals("store")) {
-                System.out.println(client.getSDFSFiles());
-            } else if (line.startsWith("list")) {
-                String[] parts = line.split("\\s+");
-                String sdfsFileName = parts[1];
-                System.out.println(client.getFileLocations(sdfsFileName));
-            }
             } catch (Exception e) {
                 LOGGER.log(Level.SEVERE, e.getMessage(), e);
             }
