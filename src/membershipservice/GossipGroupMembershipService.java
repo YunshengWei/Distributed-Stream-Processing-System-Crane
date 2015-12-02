@@ -1,10 +1,8 @@
 package membershipservice;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -63,7 +61,9 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
                     nfm = membershipList.getNonFailMembers();
                 }
                 if (id != null) {
-                    sendMembershipList(nfm, id.IPAddress, id.port);
+                    synchronized (sendSocket) {
+                        CommonUtils.sendObjectOverUDP(nfm, id.IPAddress, id.port, sendSocket);
+                    }
                 }
             } catch (IOException e) {
                 // Exception means voluntarily leaving,
@@ -82,8 +82,10 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
         public void run() {
             try {
                 // It is ok to not update membership list here
-                sendMembershipList(membershipList.getNonFailMembers(), introducerIP,
-                        introducerPort);
+                MembershipList nfm = membershipList.getNonFailMembers();
+                synchronized (sendSocket) {
+                    CommonUtils.sendObjectOverUDP(nfm, introducerIP, introducerPort, sendSocket);
+                }
             } catch (IOException e) {
                 // Exception means voluntarily leaving,
                 // so it's safe to ignore it.
@@ -122,33 +124,6 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
                 System.exit(-1);
             }
         }
-    }
-
-    /**
-     * Send a specified membership list to target over UDP.
-     * 
-     * @param ml
-     *            the membership list to send
-     * @param target
-     *            the IP address of the receiver
-     * @throws IOException
-     *             if any IO error occurs
-     */
-    private void sendMembershipList(MembershipList ml, InetAddress target, int port)
-            throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ObjectOutputStream oos = new ObjectOutputStream(baos);
-        synchronized (ml) {
-            oos.writeObject(ml);
-        }
-        byte[] bytes = baos.toByteArray();
-        oos.close();
-
-        DatagramPacket packet = new DatagramPacket(bytes, bytes.length, target, port);
-        synchronized (sendSocket) {
-            sendSocket.send(packet);
-        }
-
     }
 
     private void log(List<MembershipList.MemberStateChange> mscList) {
@@ -213,7 +188,9 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
             for (int i = 0; i < Catalog.NUM_LEAVE_GOSSIP; i++) {
                 Identity id = membershipList.getRandomAliveMember();
                 if (id != null) {
-                    sendMembershipList(vlm, id.IPAddress, id.port);
+                    synchronized (sendSocket) {
+                        CommonUtils.sendObjectOverUDP(vlm, id.IPAddress, id.port, sendSocket);
+                    }
                 }
             }
         } catch (IOException e) {
