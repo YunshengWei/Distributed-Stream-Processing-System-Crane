@@ -10,6 +10,7 @@ import crane.spout.ISpout;
 public class Topology implements Iterable<IComponent>, Serializable {
 
     private static final long serialVersionUID = 1L;
+    public String topologyID;
     private ISpout spout = null;
 
     public int size() {
@@ -18,6 +19,10 @@ public class Topology implements Iterable<IComponent>, Serializable {
             size += comp.getParallelism();
         }
         return size;
+    }
+    
+    public Topology(String topologyID) {
+        this.topologyID = topologyID;
     }
 
     public void setSpout(ISpout spout) {

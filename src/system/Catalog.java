@@ -43,12 +43,12 @@ public class Catalog {
 
     /** specify the replication factor for SDFS */
     public static final int REPLICATION_FACTOR = 3;
+    /** specify the port number on which membership service is running */
+    public static final int SDFS_MEMBERSHIP_SERVICE_PORT = 60002;
     /** specify the port number of name node service */
     public static final int SDFS_NAMENODE_PORT = 60003;
     /** specify the port number of data node service */
     public static final int SDFS_DATANODE_PORT = 60004;
-    /** specify the port number on which membership service is running */
-    public static final int SDFS_MEMBERSHIP_SERVICE_PORT = 60002;
     /** specify the address of introducer */
     public static final String INTRODUCER_ADDRESS = "fa15-cs425-g13-01.cs.illinois.edu";
     /** specify the location where data node stores files */
@@ -77,7 +77,23 @@ public class Catalog {
     public static final String NIMBUS_ADDRESS = "fa15-cs425-g13-01.cs.illinois.edu";
     /** specify the port number on which membership service is running */
     public static final int CRANE_MEMBERSHIP_SERVICE_PORT = 60005;
-    
+    /** specify the port number on which Supervisor service is running */
+    public static final int SUPERVISOR_PORT = 60006;
+    /** specify the port number on which Nimbus service is running */
+    public static final int NIMBUS_PORT = 60007;
+    /** specify the port number on which acker is listening */
+    public static final int ACKER_PORT = 60008;
+    /** specify the max packet bytes required for receiving a tuple */
+    public static final int MAX_TUPLE_BYTES = 5000;
+    /** specify the log for nimbus */
+    public static final String NIMBUS_LOG = "nb.log";
+    /** specify the log for supervisor */
+    public static final String SUPERVISOR_LOG = "sv.log";
+    /** specify the log for acker */
+    public static final String ACKER_LOG = "ack.log";
+    /** the length of checksum used by acker */
+    public static final int CHECKSUM_LENGTH = 32;
+
     /** other global settings */
 
     /** specify the root directory for logs */
