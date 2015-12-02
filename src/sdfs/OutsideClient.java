@@ -14,7 +14,7 @@ import system.CustomizedFormatter;
 
 public class OutsideClient extends Client {
 
-    private String nameNode;
+    private final String nameNode;
 
     public OutsideClient(Logger logger, String nameNode) {
         this.nameNode = nameNode;

@@ -14,13 +14,12 @@ import java.util.Observable;
 import java.util.Scanner;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.logging.FileHandler;
-import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import membershipservice.MembershipList.State;
 import system.Catalog;
+import system.CommonUtils;
 import system.DaemonService;
 import system.Identity;
 
@@ -173,34 +172,9 @@ public class GossipGroupMembershipService extends Observable implements DaemonSe
     private DatagramSocket recSocket;
     private ScheduledExecutorService scheduler;
     // java Logger is thread safe
-    private final static Logger LOGGER = initializeLogger();
-
-    // Initialize logger settings
-    private static Logger initializeLogger() {
-        Logger logger = null;
-        try {
-            logger = Logger.getLogger(GossipGroupMembershipService.class.getName());
-            logger.setUseParentHandlers(false);
-
-            Handler fileHandler = new FileHandler(Catalog.LOG_DIR + Catalog.MEMBERSHIP_SERVICE_LOG);
-            fileHandler.setFormatter(new system.CustomizedFormatter());
-            fileHandler.setLevel(Level.ALL);
-
-            // ConsoleHandler consoleHandler = new ConsoleHandler();
-            // consoleHandler.setFormatter(new CustomizedFormatter());
-            // consoleHandler.setLevel(Level.ALL);
-
-            // logger.addHandler(consoleHandler);
-            logger.addHandler(fileHandler);
-        } catch (SecurityException | IOException e) {
-            e.printStackTrace();
-            // In this case logger has not been initialized, so should not use
-            // logger.
-            // logger.log(Level.SEVERE, e.getMessage(), e);
-            System.exit(-1);
-        }
-        return logger;
-    }
+    private final static Logger LOGGER = CommonUtils.initializeLogger(
+            GossipGroupMembershipService.class.getName(),
+            Catalog.LOG_DIR + Catalog.MEMBERSHIP_SERVICE_LOG, false);
 
     public GossipGroupMembershipService(InetAddress introducerIP, int introducerPort,
             int selfPort) {

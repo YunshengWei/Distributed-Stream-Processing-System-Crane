@@ -6,15 +6,12 @@ import java.net.UnknownHostException;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.Scanner;
-import java.util.logging.ConsoleHandler;
-import java.util.logging.FileHandler;
-import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import membershipservice.GossipGroupMembershipService;
 import system.Catalog;
-import system.CustomizedFormatter;
+import system.CommonUtils;
 import system.DaemonService;
 import system.Identity;
 
@@ -27,31 +24,8 @@ public class FileSystemService implements DaemonService, Observer {
     private final LeaderElectionService les;
     private final InetAddress selfIP;
 
-    private final static Logger LOGGER = initializeLogger();
-
-    private static Logger initializeLogger() {
-        Logger logger = null;
-        try {
-            logger = Logger.getLogger(FileSystemService.class.getName());
-            logger.setUseParentHandlers(false);
-
-            Handler fileHandler = new FileHandler(Catalog.LOG_DIR + Catalog.SDFS_LOG);
-            fileHandler.setFormatter(new system.CustomizedFormatter());
-            fileHandler.setLevel(Level.ALL);
-
-            ConsoleHandler consoleHandler = new ConsoleHandler();
-            consoleHandler.setFormatter(new CustomizedFormatter());
-            consoleHandler.setLevel(Level.ALL);
-
-            logger.addHandler(consoleHandler);
-            logger.addHandler(fileHandler);
-        } catch (SecurityException | IOException e) {
-            e.printStackTrace();
-            // logger.log(Level.SEVERE, e.getMessage(), e);
-            System.exit(-1);
-        }
-        return logger;
-    }
+    private final static Logger LOGGER = CommonUtils.initializeLogger(
+            FileSystemService.class.getName(), Catalog.LOG_DIR + Catalog.SDFS_LOG, true);
 
     public FileSystemService() throws UnknownHostException {
         /*

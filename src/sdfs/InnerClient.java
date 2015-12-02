@@ -16,6 +16,7 @@ public class InnerClient extends Client {
         this.logger = logger;
     }
 
+    @Override
     protected Namenode getNamenode() throws RemoteException, NotBoundException {
         Registry registry = LocateRegistry.getRegistry(les.getLeader().IPAddress.getHostAddress(),
                 Catalog.SDFS_NAMENODE_PORT);
