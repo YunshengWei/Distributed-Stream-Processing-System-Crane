@@ -2,6 +2,7 @@ package crane;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -12,10 +13,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import crane.task.Task;
 import crane.topology.Address;
 import crane.topology.IComponent;
 import crane.topology.Topology;
@@ -32,13 +34,16 @@ public class Nimbus implements INimbus, Observer {
     private Map<InetAddress, List<Task>> taskTracker;
     private Map<InetAddress, ISupervisor> supervisors;
     private Map<InetAddress, Integer> availablePorts;
+    private Acker acker;
 
     /**
      * the mutex is used to ensure only one job is executed at one time
      */
     private Semaphore mutex;
 
-    private final Logger logger = CommonUtils.initializeLogger(Nimbus.class.getName(),
+    private final Logger nimbusLogger = CommonUtils.initializeLogger(Nimbus.class.getName(),
+            Catalog.LOG_DIR + Catalog.NIMBUS_LOG, true);
+    private final Logger ackerLogger = CommonUtils.initializeLogger(Acker.class.getName(),
             Catalog.LOG_DIR + Catalog.NIMBUS_LOG, true);
 
     public Nimbus() throws IOException {
@@ -48,8 +53,8 @@ public class Nimbus implements INimbus, Observer {
                 Catalog.CRANE_MEMBERSHIP_SERVICE_PORT, Catalog.CRANE_MEMBERSHIP_SERVICE_PORT);
         ggms.addObserver(this);
         taskTracker = new HashMap<>();
-        supervisors = new ConcurrentHashMap<>();
-        availablePorts = new ConcurrentHashMap<>();
+        supervisors = new HashMap<>();
+        availablePorts = new HashMap<>();
 
         ggms.startServe();
 
@@ -59,8 +64,11 @@ public class Nimbus implements INimbus, Observer {
     }
 
     @Override
-    public void submitTopology(Topology topology) throws RemoteException, IOException, InterruptedException {
+    public synchronized void submitTopology(Topology topology)
+            throws RemoteException, InterruptedException, IOException {
         mutex.acquire();
+
+        nimbusLogger.info(topology.topologyID + ": job received.");
         this.topology = topology;
 
         List<Task> tasks = new ArrayList<>();
@@ -69,15 +77,32 @@ public class Nimbus implements INimbus, Observer {
                 tasks.add(new Task(comp, i));
             }
         }
+
+        nimbusLogger.info("Assigning tasks.");
         assignTasks(tasks);
 
-        for (Task task : tasks) {
-            ISupervisor sv = supervisors.get(task.comp.getTaskAddress(task.no).IP);
-            sv.assignTask(task);
+        nimbusLogger.info("Starting acker.");
+        acker = new Acker(topology.getSpout().getAddress(), Catalog.ACKER_PORT, ackerLogger);
+        new Thread(acker).start();
+
+        // assign tasks in reverse order to ensure downstream components start
+        // before upstream components, otherwise some initial tuples will be
+        // wasted.
+        for (int i = tasks.size() - 1; i >= 0; i--) {
+            Task task = tasks.get(i);
+            ISupervisor sv = supervisors.get(task.getTaskAddress().IP);
+            try {
+                sv.assignTask(task);
+            } catch (RemoteException | SocketException e) {
+                // failed assignment will be detected and reassigned later
+                nimbusLogger.log(Level.SEVERE, e.getMessage(), e);
+            }
         }
     }
 
-    private void assignTasks(List<Task> tasks) {
+    // This method needs to be synchronized in order to avoid supervisors being
+    // changed when assigning tasks
+    private synchronized void assignTasks(List<Task> tasks) {
         int remainTasks = tasks.size();
         int k = 0;
         int i = 0;
@@ -89,20 +114,27 @@ public class Nimbus implements INimbus, Observer {
 
             for (int j = 0; j < numTask; j++) {
                 Task task = tasks.get(k++);
+
+                InetAddress oldIP = task.getTaskAddress() != null ? task.getTaskAddress().IP : null;
                 task.comp.assign(task.no, new Address(ip, t + j));
                 taskTracker.get(ip).add(task);
+
+                nimbusLogger
+                        .info(String.format("Assign %s: %s -> %s.", task.getTaskId(), oldIP, ip));
             }
             remainTasks -= numTask;
         }
     }
 
     @Override
-    public void update(Observable o, Object arg) {
+    public synchronized void update(Observable o, Object arg) {
         List<Task> failedTasks = new ArrayList<>();
 
         @SuppressWarnings("unchecked")
         List<Identity> failedNodes = (ArrayList<Identity>) arg;
         for (Identity id : failedNodes) {
+            nimbusLogger.info(id.IPAddress + " failed.");
+
             InetAddress ip = id.IPAddress;
             supervisors.remove(ip);
             for (Task task : taskTracker.get(ip)) {
@@ -112,22 +144,69 @@ public class Nimbus implements INimbus, Observer {
             availablePorts.remove(ip);
         }
 
+        if (supervisors.isEmpty()) {
+            nimbusLogger.info("All supervisors died. " + topology.topologyID + ": job failed.");
+            cleanUp();
+            return;
+        }
+
         assignTasks(failedTasks);
+
+        for (Task task : failedTasks) {
+            IComponent parent = task.comp.getParent();
+            if (parent == null) {
+                // it is spout. update Acker first!
+                acker.setSpoutAddress(task.getTaskAddress());
+            }
+
+            ISupervisor sv = supervisors.get(task.getTaskAddress().IP);
+            try {
+                sv.assignTask(task);
+            } catch (RemoteException | SocketException e) {
+                nimbusLogger.log(Level.SEVERE, e.getMessage(), e);
+            }
+
+            if (parent != null) {
+                for (int i = 0; i < parent.getParallelism(); i++) {
+                    Task pt = new Task(parent, i);
+                    ISupervisor psv = supervisors.get(pt.getTaskAddress().IP);
+                    try {
+                        psv.updateTask(pt);
+                    } catch (RemoteException e) {
+                        nimbusLogger.log(Level.SEVERE, e.getMessage(), e);
+                    }
+                }
+            }
+        }
     }
 
     @Override
-    public void registerSupervisor(InetAddress ip, ISupervisor supervisor) throws RemoteException {
+    public synchronized void registerSupervisor(InetAddress ip, ISupervisor supervisor)
+            throws RemoteException {
         supervisors.put(ip, supervisor);
         taskTracker.put(ip, new ArrayList<>());
         availablePorts.put(ip, Catalog.WORKER_PORT_RANGE);
     }
 
     @Override
-    public void finishJob() {
-        for (ISupervisor sv : supervisors.values()) {
+    public synchronized void finishJob() {
+        nimbusLogger.info(topology.topologyID + ": job finished.");
+        cleanUp();
+    }
+
+    private synchronized void cleanUp() {
+        for (InetAddress add : supervisors.keySet()) {
+            ISupervisor sv = supervisors.get(add);
             sv.terminateTasks();
+            taskTracker.get(add).clear();
         }
+        acker.terminate();
+
         this.topology = null;
+        for (InetAddress ip : availablePorts.keySet()) {
+            availablePorts.put(ip, Catalog.WORKER_PORT_RANGE);
+        }
+
         mutex.release();
     }
 

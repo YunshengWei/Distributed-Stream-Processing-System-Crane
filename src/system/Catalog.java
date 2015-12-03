@@ -85,16 +85,16 @@ public class Catalog {
     public static final int ACKER_PORT = 60008;
     /** ports starting from the number are reserved for worker threads */
     public static final int WORKER_PORT_RANGE = 60009;
-    /** specify the max packet bytes required for receiving a tuple */
-    public static final int MAX_TUPLE_BYTES = 5000;
     /** specify the log for nimbus */
     public static final String NIMBUS_LOG = "nb.log";
     /** specify the log for supervisor */
     public static final String SUPERVISOR_LOG = "sv.log";
     /** specify the log for acker */
     public static final String ACKER_LOG = "ack.log";
-    /** the length of checksum used by acker */
-    public static final int CHECKSUM_LENGTH = 32;
+    /** specify the directory for Crane input */
+    public static final String CRANE_DIR = "crane/";
+    /** specify the the postfix for Crane output file */
+    public static final String CRANE_RESULT_POSTFIX = "_result";
 
     /** other global settings */
 

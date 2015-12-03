@@ -1,4 +1,4 @@
-package crane;
+package crane.task;
 
 import java.io.Serializable;
 
@@ -9,11 +9,11 @@ public class AckMessage implements Serializable {
     /**
      * tupleID represents which tuple the ack message belongs to.
      */
-    public int tupleID;
+    public final int tupleID;
 
-    public byte[] checksum;
+    public final long checksum;
 
-    public AckMessage(int tupleID, byte[] checksum) {
+    public AckMessage(int tupleID, long checksum) {
         this.tupleID = tupleID;
         this.checksum = checksum;
     }

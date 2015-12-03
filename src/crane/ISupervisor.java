@@ -4,6 +4,8 @@ import java.net.SocketException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 
+import crane.task.Task;
+
 /**
  * Supervisor listens for work assigned to its machine, and starts worker
  * threads based on what Nimbus has assigned to it.
@@ -20,8 +22,7 @@ public interface ISupervisor extends Remote {
 
     /**
      * notify the supervisor that information about the given task needs to be
-     * updated. It is Nimbus's responsibility to ensure the given task is
-     * running on the machine.
+     * updated.
      * 
      * @param task
      * @throws RemoteException

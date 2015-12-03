@@ -1,7 +1,8 @@
-package crane;
+package crane.task;
 
 import java.io.Serializable;
 
+import crane.topology.Address;
 import crane.topology.IComponent;
 
 /**
@@ -17,6 +18,10 @@ public class Task implements Serializable {
     public Task(IComponent comp, int no) {
         this.comp = comp;
         this.no = no;
+    }
+
+    public Address getTaskAddress() {
+        return this.comp.getTaskAddress(no);
     }
 
     public String getTaskId() {

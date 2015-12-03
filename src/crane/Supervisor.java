@@ -1,7 +1,6 @@
 package crane;
 
 import java.io.IOException;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.rmi.NotBoundException;
@@ -9,14 +8,15 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 import crane.bolt.IBolt;
-import crane.spout.ISpout;
+import crane.task.BoltWorker;
+import crane.task.CraneWorker;
+import crane.task.SpoutWorker;
+import crane.task.Task;
 import crane.topology.Address;
 import membershipservice.GossipGroupMembershipService;
 import system.Catalog;
@@ -24,23 +24,22 @@ import system.CommonUtils;
 
 public class Supervisor implements ISupervisor {
 
+    private final Address ackerAddress;
     private final GossipGroupMembershipService ggms;
     private final Map<String, CraneWorker> taskTracker;
-    private final List<DatagramSocket> boundSockets;
-    private final Address ackerAddress;
     private final INimbus nimbus;
     private final Logger logger = CommonUtils.initializeLogger(Supervisor.class.getName(),
             Catalog.LOG_DIR + Catalog.SUPERVISOR_LOG, true);
 
     public Supervisor() throws NotBoundException, IOException {
-        // For simplicity, assume acker is on the same machine as Nimbus
+        // For simplicity, we assume acker is running on the same machine as Nimbus
         ackerAddress = new Address(InetAddress.getByName(Catalog.NIMBUS_ADDRESS),
                 Catalog.ACKER_PORT);
+
         ggms = new GossipGroupMembershipService(InetAddress.getByName(Catalog.NIMBUS_ADDRESS),
                 Catalog.CRANE_MEMBERSHIP_SERVICE_PORT, Catalog.CRANE_MEMBERSHIP_SERVICE_PORT);
-        taskTracker = new ConcurrentHashMap<>();
-        boundSockets = new ArrayList<>();
-
+        taskTracker = new HashMap<>();
+        
         ggms.startServe();
         Registry registry = LocateRegistry.getRegistry(Catalog.NIMBUS_ADDRESS, Catalog.NIMBUS_PORT);
         nimbus = (INimbus) registry.lookup("nimbus");
@@ -55,9 +54,9 @@ public class Supervisor implements ISupervisor {
         CraneWorker worker;
         if (task.comp instanceof IBolt) {
             int port = task.comp.getTaskAddress(task.no).port;
-            worker = new BoltWorker((IBolt) task.comp, port, ackerAddress, logger);
+            worker = new BoltWorker(task, port, ackerAddress, logger);
         } else {
-            worker = new SpoutWorker((ISpout) task.comp, ackerAddress, nimbus, logger);
+            worker = new SpoutWorker(task, ackerAddress, nimbus, logger);
         }
 
         taskTracker.put(task.getTaskId(), worker);
@@ -66,14 +65,16 @@ public class Supervisor implements ISupervisor {
 
     @Override
     public void updateTask(Task task) throws RemoteException {
-        taskTracker.get(task.getTaskId()).setComponent(task.comp);
+        CraneWorker worker = taskTracker.get(task.getTaskId());
+        if (worker != null) {
+            taskTracker.get(task.getTaskId()).setTask(task);
+        }
     }
 
     @Override
     public void terminateTasks() {
-        for (DatagramSocket ds : boundSockets) {
-            // The only way to terminate worker threads is to close the socket.
-            ds.close();
+        for (CraneWorker worker : taskTracker.values()) {
+            worker.terminate();
         }
     }
 

@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.SocketException;
 
-import crane.AckMessage;
 import crane.topology.Address;
 import crane.topology.IComponent;
 import crane.tuple.ITuple;
@@ -23,21 +22,20 @@ public class OutputCollector {
         this(ackerAddress, new DatagramSocket());
     }
 
-    public void ack(int tupleID, byte[] checksum) throws IOException {
+    public void ack(int tupleID, long checksum) throws IOException {
         AckMessage msg = new AckMessage(tupleID, checksum);
         CommonUtils.sendObjectOverUDP(msg, ackerAddress.IP, ackerAddress.port, sendSocket);
     }
 
-    public void emit(ITuple tuple, IComponent comp, byte[] checksum) throws IOException {
+    public long emit(ITuple tuple, IComponent comp, long checksum) throws IOException {
         for (IComponent child : comp.getChildren()) {
             int taskNo = child.getPartitionStrategy().partition(tuple, child.getParallelism());
             tuple.setSalt();
 
             Address add = child.getTaskAddress(taskNo);
             CommonUtils.sendObjectOverUDP(tuple, add.IP, add.port, sendSocket);
-            for (int i = 0; i < checksum.length; i++) {
-                checksum[i] ^= tuple.getSalt()[i];
-            }
+            checksum ^= tuple.getSalt();
         }
+        return checksum;
     }
 }

@@ -24,7 +24,7 @@ public abstract class Client {
 
     public void putFileOnSDFS(String localFile, String sdfsFile)
             throws NotBoundException, IOException {
-        logger.info("Operation beginning time.");
+        logger.info(String.format("Start putting %s on SDFS %s.", localFile, sdfsFile));
         Namenode namenode = getNamenode();
         List<Datanode> datanodes = namenode.putRequest();
         Path filePath = Paths.get(localFile);
@@ -36,7 +36,7 @@ public abstract class Client {
     }
 
     public void deleteFileFromSDFS(String file) throws NotBoundException, IOException {
-        logger.info("Operation beginning time.");
+        logger.info(String.format("Start deleting %s from SDFS.", file));
         Namenode namenode = getNamenode();
         namenode.deleteFile(file);
         logger.info(String.format("Successfully deleted %s from SDFS.", file));
@@ -44,7 +44,7 @@ public abstract class Client {
 
     public void fetchFileFromSDFS(String sdfsFile, String localFile)
             throws RemoteException, NotBoundException, FileNotFoundException {
-        logger.info("Operation beginning time.");
+        logger.info(String.format("Start getting %s from SDFS to %s.", sdfsFile, localFile));
         Namenode namenode = getNamenode();
         List<Datanode> datanodes = namenode.getFileLocations(sdfsFile);
         if (datanodes.isEmpty()) {
@@ -68,7 +68,6 @@ public abstract class Client {
 
     public List<InetAddress> getFileLocations(String file)
             throws RemoteException, NotBoundException {
-        logger.info("Operation beginning time.");
         Namenode namenode = getNamenode();
         return namenode.getFileLocationIPs(file);
     }

@@ -5,7 +5,7 @@ import java.io.Serializable;
 public interface ITuple extends Serializable {
     int getID();
 
-    byte[] getSalt();
+    long getSalt();
 
     Object[] getContent();
     

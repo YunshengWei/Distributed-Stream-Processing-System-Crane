@@ -10,8 +10,8 @@ import crane.spout.ISpout;
 public class Topology implements Iterable<IComponent>, Serializable {
 
     private static final long serialVersionUID = 1L;
-    public String topologyID;
-    private ISpout spout = null;
+    public final String topologyID;
+    private final ISpout spout;
 
     public int size() {
         int size = 0;
@@ -20,12 +20,9 @@ public class Topology implements Iterable<IComponent>, Serializable {
         }
         return size;
     }
-    
-    public Topology(String topologyID) {
-        this.topologyID = topologyID;
-    }
 
-    public void setSpout(ISpout spout) {
+    public Topology(String topologyID, ISpout spout) {
+        this.topologyID = topologyID;
         this.spout = spout;
     }
 
@@ -34,25 +31,23 @@ public class Topology implements Iterable<IComponent>, Serializable {
     }
 
     private class TopologyIterator implements Iterator<IComponent> {
-        private final Deque<IComponent> stack;
+        private final Deque<IComponent> queue;
 
         TopologyIterator() {
-            stack = new LinkedList<>();
-            if (spout != null) {
-                stack.addLast(spout);
-            }
+            queue = new LinkedList<>();
+            queue.addLast(spout);
         }
 
         @Override
         public boolean hasNext() {
-            return !stack.isEmpty();
+            return !queue.isEmpty();
         }
 
         @Override
         public IComponent next() {
-            IComponent comp = stack.removeLast();
+            IComponent comp = queue.removeFirst();
             for (IComponent child : comp.getChildren()) {
-                stack.addLast(child);
+                queue.addLast(child);
             }
             return comp;
         }
