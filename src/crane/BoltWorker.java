@@ -19,15 +19,15 @@ import system.Catalog;
 public class BoltWorker implements CraneWorker {
 
     private IBolt bolt;
-    private final DatagramSocket recSocket;
+    private final DatagramSocket socket;
     private final Logger logger;
     private final OutputCollector output;
 
-    public BoltWorker(IBolt bolt, DatagramSocket recSocket, Address ackerAddress, Logger logger)
+    public BoltWorker(IBolt bolt, int port, Address ackerAddress, Logger logger)
             throws SocketException {
         this.bolt = bolt;
-        this.recSocket = recSocket;
-        this.output = new OutputCollector(ackerAddress);
+        this.socket = new DatagramSocket(port);
+        this.output = new OutputCollector(ackerAddress, socket);
         this.logger = logger;
     }
 
@@ -42,7 +42,7 @@ public class BoltWorker implements CraneWorker {
                 Catalog.MAX_UDP_PACKET_BYTES);
         try {
             while (true) {
-                recSocket.receive(packet);
+                socket.receive(packet);
                 ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData());
                 ITuple tuple = (ITuple) new ObjectInputStream(bais).readObject();
                 bolt.execute(tuple, output);

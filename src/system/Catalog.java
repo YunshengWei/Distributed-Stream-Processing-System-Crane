@@ -83,6 +83,8 @@ public class Catalog {
     public static final int NIMBUS_PORT = 60007;
     /** specify the port number on which acker is listening */
     public static final int ACKER_PORT = 60008;
+    /** ports starting from the number are reserved for worker threads */
+    public static final int WORKER_PORT_RANGE = 60009;
     /** specify the max packet bytes required for receiving a tuple */
     public static final int MAX_TUPLE_BYTES = 5000;
     /** specify the log for nimbus */

@@ -19,7 +19,6 @@ import crane.bolt.IBolt;
 import crane.spout.ISpout;
 import crane.topology.Address;
 import membershipservice.GossipGroupMembershipService;
-import sdfs.Datanode;
 import system.Catalog;
 import system.CommonUtils;
 
@@ -27,11 +26,11 @@ public class Supervisor implements ISupervisor {
 
     private final GossipGroupMembershipService ggms;
     private final Map<String, CraneWorker> taskTracker;
-    private final Map<Integer, DatagramSocket> boundSockets;
-    private final Logger logger = CommonUtils.initializeLogger(Supervisor.class.getName(),
-            Catalog.LOG_DIR + Catalog.SUPERVISOR_LOG, true);
+    private final List<DatagramSocket> boundSockets;
     private final Address ackerAddress;
     private final INimbus nimbus;
+    private final Logger logger = CommonUtils.initializeLogger(Supervisor.class.getName(),
+            Catalog.LOG_DIR + Catalog.SUPERVISOR_LOG, true);
 
     public Supervisor() throws NotBoundException, IOException {
         // For simplicity, assume acker is on the same machine as Nimbus
@@ -40,13 +39,14 @@ public class Supervisor implements ISupervisor {
         ggms = new GossipGroupMembershipService(InetAddress.getByName(Catalog.NIMBUS_ADDRESS),
                 Catalog.CRANE_MEMBERSHIP_SERVICE_PORT, Catalog.CRANE_MEMBERSHIP_SERVICE_PORT);
         taskTracker = new ConcurrentHashMap<>();
-        boundSockets = new ConcurrentHashMap<>();
-        
+        boundSockets = new ArrayList<>();
+
         ggms.startServe();
         Registry registry = LocateRegistry.getRegistry(Catalog.NIMBUS_ADDRESS, Catalog.NIMBUS_PORT);
         nimbus = (INimbus) registry.lookup("nimbus");
-        
-        ISupervisor stub = (ISupervisor) UnicastRemoteObject.exportObject(this, Catalog.SUPERVISOR_PORT);
+
+        ISupervisor stub = (ISupervisor) UnicastRemoteObject.exportObject(this,
+                Catalog.SUPERVISOR_PORT);
         nimbus.registerSupervisor(InetAddress.getLocalHost(), stub);
     }
 
@@ -55,8 +55,7 @@ public class Supervisor implements ISupervisor {
         CraneWorker worker;
         if (task.comp instanceof IBolt) {
             int port = task.comp.getTaskAddress(task.no).port;
-            DatagramSocket ds = boundSockets.get(port);
-            worker = new BoltWorker((IBolt) task.comp, ds, ackerAddress, logger);
+            worker = new BoltWorker((IBolt) task.comp, port, ackerAddress, logger);
         } else {
             worker = new SpoutWorker((ISpout) task.comp, ackerAddress, nimbus, logger);
         }
@@ -71,14 +70,11 @@ public class Supervisor implements ISupervisor {
     }
 
     @Override
-    public List<Integer> registerPorts(int numPorts) throws RemoteException, IOException {
-        List<Integer> ports = new ArrayList<>();
-        for (int i = 0; i < numPorts; i++) {
-            DatagramSocket ds = new DatagramSocket();
-            boundSockets.put(ds.getLocalPort(), ds);
-            ports.add(ds.getLocalPort());
+    public void terminateTasks() {
+        for (DatagramSocket ds : boundSockets) {
+            // The only way to terminate worker threads is to close the socket.
+            ds.close();
         }
-        return ports;
     }
 
     public void main(String[] args) throws IOException, NotBoundException {

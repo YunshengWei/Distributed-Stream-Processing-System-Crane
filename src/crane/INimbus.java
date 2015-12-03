@@ -9,9 +9,10 @@ import crane.topology.Topology;
 
 /**
  * Nimbus is the master node for Crane. Nimbus is responsible for receiving job
- * from clients, assigning tasks to supervisors, and monitoring for failures. We
- * assume Nimbus tracks at most one job at the same time, and nimbus never dies.
- * (This is a reasonable assumption.)
+ * from clients, assigning tasks to supervisors, and monitoring for failures.
+ * Our implementation of Nimbus tracks at most one job at the same time, the
+ * other jobs need to wait until the current job finishes, and we assume Nimbus
+ * never dies. (This is a reasonable assumption.)
  */
 public interface INimbus extends Remote {
     /**
@@ -21,8 +22,9 @@ public interface INimbus extends Remote {
      *            the topology for the job
      * @throws RemoteException
      * @throws IOException
+     * @throws InterruptedException 
      */
-    void submitTopology(Topology topology) throws RemoteException, IOException;
+    void submitTopology(Topology topology) throws RemoteException, IOException, InterruptedException;
 
     /**
      * Supervisor join the system by calling the method.
@@ -36,10 +38,8 @@ public interface INimbus extends Remote {
     void registerSupervisor(InetAddress selfIP, ISupervisor supervisor) throws RemoteException;
 
     /**
-     * Query the current status.
-     * 
-     * @return a brief summary of the current status
-     * @throws RemoteException
+     * Notify Nimbus that the current job has finished. The method is called by
+     * spout task.
      */
-    String queryStatus() throws RemoteException;
+    void finishJob();
 }

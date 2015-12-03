@@ -33,6 +33,7 @@ public class SpoutWorker implements CraneWorker {
             while ((tuple = spout.nextTuple()) != null) {
                 spout.execute(tuple, output);
             }
+            nimbus.finishJob();
         } catch (IOException e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
             spout.close();

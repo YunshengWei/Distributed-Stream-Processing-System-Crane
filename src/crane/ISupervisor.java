@@ -1,10 +1,8 @@
 package crane;
 
-import java.io.IOException;
 import java.net.SocketException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.util.List;
 
 /**
  * Supervisor listens for work assigned to its machine, and starts worker
@@ -31,13 +29,7 @@ public interface ISupervisor extends Remote {
     void updateTask(Task task) throws RemoteException;
 
     /**
-     * Register ports on the machine.
-     * 
-     * @param numPorts
-     *            the number of ports to register
-     * @return the registered ports
-     * @throws RemoteException
-     * @throws IOException
+     * Terminate all worker threads.
      */
-    List<Integer> registerPorts(int numPorts) throws RemoteException, IOException;
+    void terminateTasks();
 }

@@ -14,9 +14,13 @@ public class OutputCollector {
     private final DatagramSocket sendSocket;
     private final Address ackerAddress;
 
-    public OutputCollector(Address ackerAddress) throws SocketException {
-        sendSocket = new DatagramSocket();
+    public OutputCollector(Address ackerAddress, DatagramSocket sendSocket) {
         this.ackerAddress = ackerAddress;
+        this.sendSocket = sendSocket;
+    }
+
+    public OutputCollector(Address ackerAddress) throws SocketException {
+        this(ackerAddress, new DatagramSocket());
     }
 
     public void ack(int tupleID, byte[] checksum) throws IOException {
@@ -28,7 +32,7 @@ public class OutputCollector {
         for (IComponent child : comp.getChildren()) {
             int taskNo = child.getPartitionStrategy().partition(tuple, child.getParallelism());
             tuple.setSalt();
-            
+
             Address add = child.getTaskAddress(taskNo);
             CommonUtils.sendObjectOverUDP(tuple, add.IP, add.port, sendSocket);
             for (int i = 0; i < checksum.length; i++) {
