@@ -19,7 +19,7 @@ public class FileLineSpout extends BasicComponent implements ISpout {
     private static final long serialVersionUID = 1L;
 
     private final String fileName;
-    private BufferedReader reader;
+    private transient BufferedReader reader;
     private int tupleID;
 
     public FileLineSpout(String componentID, IPartitionStrategy ps, String fileName) {
@@ -51,11 +51,4 @@ public class FileLineSpout extends BasicComponent implements ISpout {
             return null;
         }
     }
-
-    @Override
-    public void ack(int msgID) {
-        // TODO Auto-generated method stub
-
-    }
-
 }

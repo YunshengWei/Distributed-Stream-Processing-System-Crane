@@ -53,8 +53,7 @@ public class Supervisor implements ISupervisor {
     public void assignTask(Task task) throws RemoteException, SocketException {
         CraneWorker worker;
         if (task.comp instanceof IBolt) {
-            int port = task.comp.getTaskAddress(task.no).port;
-            worker = new BoltWorker(task, port, ackerAddress, logger);
+            worker = new BoltWorker(task, ackerAddress, logger);
         } else {
             worker = new SpoutWorker(task, ackerAddress, nimbus, logger);
         }

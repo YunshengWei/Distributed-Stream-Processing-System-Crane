@@ -14,22 +14,24 @@ import system.Catalog;
 
 public class BoltWorker implements CraneWorker {
 
-    private Task task;
+    private final Task task;
     private final DatagramSocket socket;
     private final Logger logger;
     private final OutputCollector output;
 
-    public BoltWorker(Task task, int port, Address ackerAddress, Logger logger)
+    public BoltWorker(Task task, Address ackerAddress, Logger logger)
             throws SocketException {
         this.task = task;
-        this.socket = new DatagramSocket(port);
+        this.socket = new DatagramSocket(task.getTaskAddress().port);
         this.output = new OutputCollector(ackerAddress, socket);
         this.logger = logger;
     }
 
     @Override
     public void setTask(Task task) {
-        this.task = task;
+        for (int i = 0; i < task.comp.getChildren().size(); i++) {
+            this.task.comp.getChildren().set(i, task.comp.getChildren().get(i));
+        }
     }
 
     @Override

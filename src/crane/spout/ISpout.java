@@ -16,8 +16,6 @@ public interface ISpout extends IComponent {
 
     ITuple nextTuple() throws IOException;
 
-    void ack(int msgID);
-
     default void execute(ITuple tuple, OutputCollector output) throws IOException {
         long checksum = 0;
         checksum = output.emit(tuple, this, checksum);

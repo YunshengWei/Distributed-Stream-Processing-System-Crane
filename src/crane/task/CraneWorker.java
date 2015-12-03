@@ -1,8 +1,18 @@
 package crane.task;
 
+/**
+ * CraneWorker is worker thread for Crane.
+ */
 public interface CraneWorker extends Runnable {
-
-    public void setTask(Task task);
+    /**
+     * set the task for the worker.
+     * 
+     * @param comp
+     */
+    void setTask(Task task);
     
-    public void terminate();
+    /**
+     * Terminate the worker
+     */
+    void terminate();
 }
