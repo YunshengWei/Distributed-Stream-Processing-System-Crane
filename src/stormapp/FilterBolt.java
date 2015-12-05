@@ -17,7 +17,7 @@ import backtype.storm.tuple.Values;
 public class FilterBolt extends BaseRichBolt {
     
     private Set<String> FILTER_LIST = new HashSet<String>(Arrays.asList(new String[] {
-            "ongoing-event" }));
+            "ongoing-event","news" }));
     private OutputCollector collector;
 
     @Override
@@ -26,6 +26,7 @@ public class FilterBolt extends BaseRichBolt {
         String topic = (String) input.getValueByField("topic");
         if (!FILTER_LIST.contains(topic)) {
             collector.emit(new Values(tweet, topic));
+            System.out.println(topic+":tweet "+tweet+" for topic "+topic);
         }
     }
  

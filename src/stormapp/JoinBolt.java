@@ -18,7 +18,7 @@ public class JoinBolt extends BaseRichBolt{
         String tweet = (String) input.getValueByField("tweet");
         String topic = (String) input.getValueByField("topic");
             collector.emit(new Values(tweet, topic));
-        
+        System.out.println(topic+":tweet "+tweet+" for topic "+topic);
     }
 
     @Override
