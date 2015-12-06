@@ -98,6 +98,7 @@ public class SpoutWorker implements CraneWorker {
     private final Task task;
     private final ISpout spout;
     private final Logger logger;
+    private final DatagramSocket ds;
     private final OutputCollector output;
     private final INimbus nimbus;
     private final Set<Integer> completedTuples;
@@ -108,8 +109,8 @@ public class SpoutWorker implements CraneWorker {
         this.finished = false;
         this.task = task;
         this.spout = (ISpout) task.comp;
-        this.output = new OutputCollector(ackerAddress,
-                new DatagramSocket(task.getTaskAddress().port));
+        this.ds = new DatagramSocket(task.getTaskAddress().port);
+        this.output = new OutputCollector(ackerAddress, ds);
         this.nimbus = nimbus;
         this.logger = logger;
         this.completedTuples = Collections.synchronizedSet(new HashSet<>());
@@ -131,7 +132,6 @@ public class SpoutWorker implements CraneWorker {
     @Override
     public void run() {
         try {
-            DatagramSocket ds = new DatagramSocket(task.getTaskAddress().port);
             new Thread(new AckReceiver(ds)).start();
 
             spout.open();
@@ -152,6 +152,8 @@ public class SpoutWorker implements CraneWorker {
             nimbus.finishJob();
             this.finished = true;
             ds.close();
+            
+            logger.info(task.getTaskId() + ": terminated.");
         } catch (IOException | InterruptedException e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
         }

@@ -1,8 +1,11 @@
 package crane.topology;
 
+import java.io.Serializable;
 import java.net.InetAddress;
 
-public class Address {
+public class Address implements Serializable {
+
+    private static final long serialVersionUID = 1L;
     public final InetAddress IP;
     public final int port;
 

@@ -58,6 +58,7 @@ public class Supervisor implements ISupervisor {
             worker = new SpoutWorker(task, ackerAddress, nimbus, logger);
         }
 
+        logger.info(String.format("%s assigned.", task.getTaskId()));
         taskTracker.put(task.getTaskId(), worker);
         new Thread(worker).start();
     }

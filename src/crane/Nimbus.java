@@ -114,13 +114,16 @@ public class Nimbus implements INimbus, Observer {
 
             for (int j = 0; j < numTask; j++) {
                 Task task = tasks.get(k++);
-
+                
                 InetAddress oldIP = task.getTaskAddress() != null ? task.getTaskAddress().IP : null;
                 task.comp.assign(task.no, new Address(ip, t + j));
                 taskTracker.get(ip).add(task);
 
-                nimbusLogger
-                        .info(String.format("Assign %s: %s -> %s.", task.getTaskId(), oldIP, ip));
+                /////
+                nimbusLogger.info(String.valueOf(task.getTaskAddress().port));
+                /////
+                nimbusLogger.info(String.format("Assign %s: %s -> %s.", task.getTaskId(),
+                        oldIP == null ? "" : oldIP.toString(), ip));
             }
             remainTasks -= numTask;
         }
