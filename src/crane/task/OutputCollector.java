@@ -31,7 +31,7 @@ public class OutputCollector {
         for (IComponent child : comp.getChildren()) {
             int taskNo = child.getPartitionStrategy().partition(tuple, child.getParallelism());
             tuple.setSalt();
-
+           
             Address add = child.getTaskAddress(taskNo);
             CommonUtils.sendObjectOverUDP(tuple, add.IP, add.port, sendSocket);
             checksum ^= tuple.getSalt();

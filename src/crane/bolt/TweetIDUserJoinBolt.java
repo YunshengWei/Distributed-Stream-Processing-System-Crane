@@ -29,7 +29,8 @@ public class TweetIDUserJoinBolt extends BasicBolt {
                 "UTF-8");
         List<ITuple> joinResult = new ArrayList<>();
         for (String line : lines) {
-            joinResult.add(new OneStringTuple(tuple.getID(), tweetid + "\t" + line));
+            String[] fields = line.split("\t");
+            joinResult.add(new OneStringTuple(tuple.getID(), tweetid + "\t" + fields[1]));
         }
         return joinResult;
     }

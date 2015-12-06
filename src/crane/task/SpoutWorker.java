@@ -67,13 +67,12 @@ public class SpoutWorker implements CraneWorker {
                         break;
                     }
 
-                    if (pendingTuples.isEmpty()) {
-                        Thread.sleep(Catalog.TUPLE_TIMEOUT);
-                        continue;
-                    }
-
                     long currentTime = System.currentTimeMillis();
                     while (!pendingTuples.isEmpty()) {
+                        ///////
+                        System.out.println(pendingTuples.size());
+
+                        /////
                         TupleStatus ts = pendingTuples.get(0);
                         if (completedTuples.contains(ts.tuple.getID())) {
                             pendingTuples.remove(0);
@@ -110,6 +109,7 @@ public class SpoutWorker implements CraneWorker {
         this.task = task;
         this.spout = (ISpout) task.comp;
         this.ds = new DatagramSocket(task.getTaskAddress().port);
+        this.ds.setReceiveBufferSize(Catalog.UDP_RECEIVE_BUFFER_SIZE);
         this.output = new OutputCollector(ackerAddress, ds);
         this.nimbus = nimbus;
         this.logger = logger;
@@ -152,16 +152,20 @@ public class SpoutWorker implements CraneWorker {
             nimbus.finishJob();
             this.finished = true;
             ds.close();
-            
+
             logger.info(task.getTaskId() + ": terminated.");
         } catch (IOException | InterruptedException e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
         }
     }
 
-    private synchronized void sendTuple(ITuple tuple) throws IOException {
+    private void sendTuple(ITuple tuple) throws IOException {
         spout.execute(tuple, output);
         pendingTuples.add(new TupleStatus(tuple, System.currentTimeMillis()));
+
+        /////////
+        logger.info(String.format("Sending tuple id %s", tuple.getID()));
+        /////////
     }
 
     @Override

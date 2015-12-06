@@ -30,11 +30,13 @@ public class Acker implements CraneWorker {
     public Acker(Address spoutAddress, int port, Logger logger) throws SocketException {
         this.spoutAddress = spoutAddress;
         this.ds = new DatagramSocket(port);
+        this.ds.setReceiveBufferSize(Catalog.UDP_RECEIVE_BUFFER_SIZE);
         this.logger = logger;
         this.tupleChecksums = Collections.synchronizedMap(new HashMap<>());
     }
 
     public void setSpoutAddress(Address spoutAddress) {
+        logger.info("Spout address reset to " + spoutAddress);
         this.spoutAddress = spoutAddress;
         tupleChecksums.clear();
     }
@@ -51,16 +53,20 @@ public class Acker implements CraneWorker {
                 
                 int tid = msg.tupleID;
                 long checksum = msg.checksum;
-                synchronized (tupleChecksums) {
+                logger.info(String.format("Received checksum for tupleID %s: %s", tid, checksum));
+                ///////
+                //synchronized (tupleChecksums) {
                     long cs = tupleChecksums.getOrDefault(tid, 0L);
                     cs ^= checksum;
+                    logger.info(String.format("New checksum for tupleID %s: %s", tid, cs));
+                    
                     if (cs == 0) {
                         tupleChecksums.remove(tid);
                         CommonUtils.sendObjectOverUDP(tid, spoutAddress.IP, spoutAddress.port, ds);
                     } else {
                         tupleChecksums.put(tid, cs);
                     }
-                }
+                //}////////
             }
         } catch (IOException | ClassNotFoundException e) {
             logger.info("Acker terminated.");

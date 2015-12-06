@@ -50,7 +50,7 @@ public class Catalog {
     /** specify the port number of data node service */
     public static final int SDFS_DATANODE_PORT = 60004;
     /** specify the address of introducer */
-    public static final String INTRODUCER_ADDRESS = "fa15-cs425-g13-01.cs.illinois.edu";
+    public static final String INTRODUCER_ADDRESS = "fa15-cs425-g13-03.cs.illinois.edu";
     /** specify the location where data node stores files */
     public static final String SDFS_DIR = "sdfs/";
     /** specify the log for SDFS */
@@ -74,7 +74,7 @@ public class Catalog {
     public static final long REPLICATION_SILENCE_PERIOD = 20000;
 
     /** Settings for Crane */
-    public static final String NIMBUS_ADDRESS = "fa15-cs425-g13-01.cs.illinois.edu";
+    public static final String NIMBUS_ADDRESS = "fa15-cs425-g13-03.cs.illinois.edu";
     /** specify the port number on which membership service is running */
     public static final int CRANE_MEMBERSHIP_SERVICE_PORT = 60005;
     /** specify the port number on which Supervisor service is running */
@@ -101,6 +101,12 @@ public class Catalog {
     public static final long TUPLE_TIMEOUT = 10000;
     /** specify the time gap for spout to check its finishing status */
     public static final long FINISH_STATUS_CHECK_GAP = 100;
+    /**
+     * the size to which to set the UDP receive buffer size. It is useful to
+     * buffer multiple packets when packets arrive faster than are being
+     * received
+     */
+    public static final int UDP_RECEIVE_BUFFER_SIZE = 212992;
 
     /** other global settings */
 

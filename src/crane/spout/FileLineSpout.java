@@ -6,6 +6,7 @@ import java.io.IOException;
 
 import crane.tuple.ITuple;
 import crane.tuple.OneStringTuple;
+import system.Catalog;
 
 public class FileLineSpout extends BasicSpout {
 
@@ -21,7 +22,7 @@ public class FileLineSpout extends BasicSpout {
 
     @Override
     public void open() throws IOException {
-        reader = new BufferedReader(new FileReader(fileName));
+        reader = new BufferedReader(new FileReader(Catalog.CRANE_DIR + fileName));
         // skip the first line
         reader.readLine();
     }

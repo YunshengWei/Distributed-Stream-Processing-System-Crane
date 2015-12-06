@@ -19,10 +19,10 @@ public class BoltWorker implements CraneWorker {
     private final Logger logger;
     private final OutputCollector output;
 
-    public BoltWorker(Task task, Address ackerAddress, Logger logger)
-            throws SocketException {
+    public BoltWorker(Task task, Address ackerAddress, Logger logger) throws SocketException {
         this.task = task;
         this.socket = new DatagramSocket(task.getTaskAddress().port);
+        this.socket.setReceiveBufferSize(Catalog.UDP_RECEIVE_BUFFER_SIZE);
         this.output = new OutputCollector(ackerAddress, socket);
         this.logger = logger;
     }
@@ -49,7 +49,7 @@ public class BoltWorker implements CraneWorker {
             logger.info(task.getTaskId() + ": terminated.");
         }
     }
-    
+
     @Override
     public void terminate() {
         this.socket.close();
