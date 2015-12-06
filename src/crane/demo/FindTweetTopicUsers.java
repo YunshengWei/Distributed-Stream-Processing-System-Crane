@@ -21,14 +21,12 @@ public class FindTweetTopicUsers {
             throws NotBoundException, IOException, InterruptedException {
         ISpout spout = new FileLineSpout("spout", "TT-annotations.csv");
         IBolt bolt1 = new OngoingEventFilterBolt("bolt-1", 1, new RandomPartitionStrategy());
-        IBolt bolt2 = new TweetIDUserJoinBolt("bolt-2", 1, new RandomPartitionStrategy());
+        //IBolt bolt2 = new TweetIDUserJoinBolt("bolt-2", 1, new RandomPartitionStrategy());
         IBolt sink = new SinkBolt("sink", "NULL");
         spout.addChild(bolt1);
         //bolt1.addChild(bolt2);
-        //bolt2.addChild(sink);
         bolt1.addChild(sink);
-        //spout.addChild(sink);
-        ////////
+        
         Topology top = new Topology("FindTweetTopicUsers", spout);
 
         Registry registry = LocateRegistry.getRegistry(Catalog.NIMBUS_ADDRESS, Catalog.NIMBUS_PORT);

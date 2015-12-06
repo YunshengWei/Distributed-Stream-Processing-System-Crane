@@ -1,6 +1,5 @@
 package crane.topology;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,6 +28,7 @@ public abstract class BasicComponent implements IComponent {
     @Override
     public void addChild(IComponent comp) {
         children.add(comp);
+        comp.setParent(comp);
     }
 
     @Override
@@ -40,7 +40,7 @@ public abstract class BasicComponent implements IComponent {
     public IComponent getParent() {
         return parent;
     }
-    
+
     @Override
     public void setParent(IComponent comp) {
         parent = comp;

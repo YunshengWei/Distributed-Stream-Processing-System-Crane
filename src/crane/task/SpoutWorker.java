@@ -48,7 +48,9 @@ public class SpoutWorker implements CraneWorker {
                     ds.receive(packet);
                     ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData());
                     int tupleId = (int) new ObjectInputStream(bais).readObject();
-
+                    
+                    logger.info(String.format("Received ack for tuple %s", tupleId));
+                    
                     completedTuples.add(tupleId);
                 }
             } catch (IOException | ClassNotFoundException e) {
@@ -69,10 +71,6 @@ public class SpoutWorker implements CraneWorker {
 
                     long currentTime = System.currentTimeMillis();
                     while (!pendingTuples.isEmpty()) {
-                        ///////
-                        System.out.println(pendingTuples.size());
-
-                        /////
                         TupleStatus ts = pendingTuples.get(0);
                         if (completedTuples.contains(ts.tuple.getID())) {
                             pendingTuples.remove(0);
@@ -97,7 +95,8 @@ public class SpoutWorker implements CraneWorker {
     private final Task task;
     private final ISpout spout;
     private final Logger logger;
-    private final DatagramSocket ds;
+    private final DatagramSocket sendSocket;
+    private final DatagramSocket recSocket;
     private final OutputCollector output;
     private final INimbus nimbus;
     private final Set<Integer> completedTuples;
@@ -108,9 +107,11 @@ public class SpoutWorker implements CraneWorker {
         this.finished = false;
         this.task = task;
         this.spout = (ISpout) task.comp;
-        this.ds = new DatagramSocket(task.getTaskAddress().port);
-        this.ds.setReceiveBufferSize(Catalog.UDP_RECEIVE_BUFFER_SIZE);
-        this.output = new OutputCollector(ackerAddress, ds);
+        this.recSocket = new DatagramSocket(task.getTaskAddress().port);
+        this.recSocket.setReceiveBufferSize(Catalog.UDP_BUFFER_SIZE);
+        this.sendSocket = new DatagramSocket();
+        this.sendSocket.setSendBufferSize(Catalog.UDP_BUFFER_SIZE);
+        this.output = new OutputCollector(ackerAddress, sendSocket);
         this.nimbus = nimbus;
         this.logger = logger;
         this.completedTuples = Collections.synchronizedSet(new HashSet<>());
@@ -132,7 +133,7 @@ public class SpoutWorker implements CraneWorker {
     @Override
     public void run() {
         try {
-            new Thread(new AckReceiver(ds)).start();
+            new Thread(new AckReceiver(recSocket)).start();
 
             spout.open();
 
@@ -141,6 +142,7 @@ public class SpoutWorker implements CraneWorker {
             ITuple tuple;
             while ((tuple = spout.nextTuple()) != null) {
                 sendTuple(tuple);
+                Thread.sleep(50);
             }
 
             spout.close();
@@ -151,7 +153,8 @@ public class SpoutWorker implements CraneWorker {
 
             nimbus.finishJob();
             this.finished = true;
-            ds.close();
+            recSocket.close();
+            sendSocket.close();
 
             logger.info(task.getTaskId() + ": terminated.");
         } catch (IOException | InterruptedException e) {
@@ -162,10 +165,6 @@ public class SpoutWorker implements CraneWorker {
     private void sendTuple(ITuple tuple) throws IOException {
         spout.execute(tuple, output);
         pendingTuples.add(new TupleStatus(tuple, System.currentTimeMillis()));
-
-        /////////
-        logger.info(String.format("Sending tuple id %s", tuple.getID()));
-        /////////
     }
 
     @Override

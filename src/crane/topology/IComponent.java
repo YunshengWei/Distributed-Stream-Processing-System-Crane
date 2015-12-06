@@ -16,16 +16,16 @@ public interface IComponent extends Serializable {
     public List<IComponent> getChildren();
 
     public IComponent getParent();
-    
+
     public void setParent(IComponent comp);
-    
+
     public int getParallelism();
 
     public void assign(int taskNo, Address address);
 
     public Address getTaskAddress(int taskNo);
 
-    public void execute(ITuple tuple, OutputCollector output) throws IOException;
+    public void execute(ITuple tuple, OutputCollector output) throws IOException, InterruptedException;
 
     public IPartitionStrategy getPartitionStrategy();
 }

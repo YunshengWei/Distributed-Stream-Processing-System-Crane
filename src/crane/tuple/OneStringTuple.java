@@ -9,7 +9,7 @@ public class OneStringTuple extends BasicTuple {
         this.content = new Object[1];
         this.content[0] = content;
     }
-    
+
     @Override
     public int hashCode() {
         return this.content[0].hashCode();

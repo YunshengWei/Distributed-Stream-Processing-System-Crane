@@ -44,7 +44,7 @@ public class Nimbus implements INimbus, Observer {
     private final Logger nimbusLogger = CommonUtils.initializeLogger(Nimbus.class.getName(),
             Catalog.LOG_DIR + Catalog.NIMBUS_LOG, true);
     private final Logger ackerLogger = CommonUtils.initializeLogger(Acker.class.getName(),
-            Catalog.LOG_DIR + Catalog.ACKER_LOG, true);
+            Catalog.LOG_DIR + Catalog.ACKER_LOG, false);
 
     public Nimbus() throws IOException {
         mutex = new Semaphore(1);

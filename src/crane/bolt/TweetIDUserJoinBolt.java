@@ -26,7 +26,7 @@ public class TweetIDUserJoinBolt extends BasicBolt {
         String tweetid = (String) t.getContent()[0];
 
         List<String> lines = FileUtils.readLines(new File(Catalog.CRANE_DIR + "tweets/" + tweetid),
-                "UTF-8");
+                Catalog.ENCODING);
         List<ITuple> joinResult = new ArrayList<>();
         for (String line : lines) {
             String[] fields = line.split("\t");
@@ -34,5 +34,4 @@ public class TweetIDUserJoinBolt extends BasicBolt {
         }
         return joinResult;
     }
-
 }

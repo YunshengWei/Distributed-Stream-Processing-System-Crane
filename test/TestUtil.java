@@ -29,7 +29,7 @@ public class TestUtil {
         List<String> lines = new ArrayList<>();
 
         // Use Scanner rather than BufferedReader
-        try (Scanner sc = new Scanner(new InputStreamReader(new FileInputStream(file), Catalog.encoding))) {
+        try (Scanner sc = new Scanner(new InputStreamReader(new FileInputStream(file), Catalog.ENCODING))) {
             sc.useDelimiter("\\n|\\r\\n");
             Map<Integer, List<String>> machineLines = new HashMap<>();
 

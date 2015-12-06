@@ -25,7 +25,7 @@ public class LogQueryService implements DaemonService {
         @Override
         public void run() {
             try (BufferedReader br = new BufferedReader(
-                    new InputStreamReader(socket.getInputStream(), Catalog.encoding));
+                    new InputStreamReader(socket.getInputStream(), Catalog.ENCODING));
                     OutputStream os = socket.getOutputStream()) {
                 String line;
                 while ((line = br.readLine()) != null) {

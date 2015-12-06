@@ -17,11 +17,12 @@ public abstract class BasicBolt extends BasicComponent implements IBolt {
     private static final long serialVersionUID = 1L;
 
     @Override
-    public void execute(ITuple tuple, OutputCollector output) throws IOException {
+    public void execute(ITuple tuple, OutputCollector output) throws IOException, InterruptedException {
         long checksum = tuple.getSalt();
         List<ITuple> tuples = map(tuple);
         for (ITuple t : tuples) {
             checksum = output.emit(t, this, checksum);
+            //Thread.sleep(200);
         }
         output.ack(tuple.getID(), checksum);
     }

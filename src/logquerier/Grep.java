@@ -260,7 +260,7 @@ public class Grep {
     public void execute() {
         PrintWriter pw;
         try {
-            pw = new PrintWriter(new OutputStreamWriter(os, Catalog.encoding), true);
+            pw = new PrintWriter(new OutputStreamWriter(os, Catalog.ENCODING), true);
         } catch (UnsupportedEncodingException e1) {
             e1.printStackTrace();
             return;
@@ -272,7 +272,7 @@ public class Grep {
 
         if (fileNamePatterns.isEmpty()) {
             try {
-                sc = new Scanner(new InputStreamReader(System.in, Catalog.encoding));
+                sc = new Scanner(new InputStreamReader(System.in, Catalog.ENCODING));
                 sc.useDelimiter("\\n|\\r\\n");
                 grep(sc, pw, "");
             } catch (UnsupportedEncodingException e) {
@@ -286,7 +286,7 @@ public class Grep {
                 String prefix = fileName + ":";
                 try {
                     sc = new Scanner(
-                            new InputStreamReader(new FileInputStream(fileName), Catalog.encoding));
+                            new InputStreamReader(new FileInputStream(fileName), Catalog.ENCODING));
                     sc.useDelimiter("\\n|\\r\\n");
                     grep(sc, pw, prefix);
                     sc.close();

@@ -58,9 +58,9 @@ public class RemoteGrepClient {
         private void executeQuery(Socket socket) {
             // Use scanner instead of BufferedReader to avoid insidious Carriage
             // Return problems
-            try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), Catalog.encoding),
+            try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), Catalog.ENCODING),
                     true);
-                    Scanner sc = new Scanner(new InputStreamReader(socket.getInputStream(), Catalog.encoding))
+                    Scanner sc = new Scanner(new InputStreamReader(socket.getInputStream(), Catalog.ENCODING))
                             .useDelimiter("\\n|\\r\\n")) {
                 // Notice: A tricky detail here.
                 // send String array using JSON format

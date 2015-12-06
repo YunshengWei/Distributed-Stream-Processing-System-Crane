@@ -28,5 +28,4 @@ public class SplitSentenceBolt extends BasicBolt {
 
         return tuples;
     }
-
 }

@@ -1,6 +1,7 @@
 package crane.task;
 
 import java.io.IOException;
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
 
@@ -24,14 +25,17 @@ public class OutputCollector {
 
     public void ack(int tupleID, long checksum) throws IOException {
         AckMessage msg = new AckMessage(tupleID, checksum);
-        CommonUtils.sendObjectOverUDP(msg, ackerAddress.IP, ackerAddress.port, sendSocket);
+        byte[] bytes = msg.toBytes();
+        DatagramPacket packet = new DatagramPacket(bytes, bytes.length, ackerAddress.IP,
+                ackerAddress.port);
+        sendSocket.send(packet);
     }
 
     public long emit(ITuple tuple, IComponent comp, long checksum) throws IOException {
         for (IComponent child : comp.getChildren()) {
             int taskNo = child.getPartitionStrategy().partition(tuple, child.getParallelism());
             tuple.setSalt();
-           
+
             Address add = child.getTaskAddress(taskNo);
             CommonUtils.sendObjectOverUDP(tuple, add.IP, add.port, sendSocket);
             checksum ^= tuple.getSalt();

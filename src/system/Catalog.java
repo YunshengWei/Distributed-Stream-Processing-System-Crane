@@ -98,20 +98,18 @@ public class Catalog {
     /** specify the time gap to check tuple timeout */
     public static final long TIMEOUT_CHECK_GAP = 500;
     /** how long will a tuple timeout */
-    public static final long TUPLE_TIMEOUT = 10000;
-    /** specify the time gap for spout to check its finishing status */
-    public static final long FINISH_STATUS_CHECK_GAP = 100;
+    public static final long TUPLE_TIMEOUT = 30000;
     /**
-     * the size to which to set the UDP receive buffer size. It is useful to
-     * buffer multiple packets when packets arrive faster than are being
-     * received
+     * specify the time gap for spout and bolts to check its finishing status
      */
-    public static final int UDP_RECEIVE_BUFFER_SIZE = 212992;
+    public static final long FINISH_STATUS_CHECK_GAP = 100;
+    /** the UDP buffer size */
+    public static final int UDP_BUFFER_SIZE = 212992;
 
     /** other global settings */
 
     /** specify the root directory for logs */
     public static final String LOG_DIR = "log/";
     /** specify the character encoding used by the whole system */
-    public static final String encoding = "UTF-8";
+    public static final String ENCODING = "UTF-8";
 }

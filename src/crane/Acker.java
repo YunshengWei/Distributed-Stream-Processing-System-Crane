@@ -1,8 +1,6 @@
 package crane;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
@@ -30,7 +28,7 @@ public class Acker implements CraneWorker {
     public Acker(Address spoutAddress, int port, Logger logger) throws SocketException {
         this.spoutAddress = spoutAddress;
         this.ds = new DatagramSocket(port);
-        this.ds.setReceiveBufferSize(Catalog.UDP_RECEIVE_BUFFER_SIZE);
+        this.ds.setReceiveBufferSize(Catalog.UDP_BUFFER_SIZE);
         this.logger = logger;
         this.tupleChecksums = Collections.synchronizedMap(new HashMap<>());
     }
@@ -48,8 +46,11 @@ public class Acker implements CraneWorker {
         try {
             while (true) {
                 ds.receive(packet);
-                ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData());
-                AckMessage msg = (AckMessage) new ObjectInputStream(bais).readObject();
+                // Use the serialization written by myself to improve performance
+                AckMessage msg = new AckMessage(packet.getData());
+                //////////
+                //ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData());
+                //AckMessage msg = (AckMessage) new ObjectInputStream(bais).readObject();
                 
                 int tid = msg.tupleID;
                 long checksum = msg.checksum;
@@ -68,7 +69,7 @@ public class Acker implements CraneWorker {
                     }
                 //}////////
             }
-        } catch (IOException | ClassNotFoundException e) {
+        } catch (IOException e) {
             logger.info("Acker terminated.");
         }
     }

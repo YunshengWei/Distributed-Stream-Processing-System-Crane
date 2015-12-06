@@ -1,6 +1,7 @@
 package crane.bolt;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Collections;
 import java.util.List;
 
@@ -13,6 +14,7 @@ public class SinkBolt extends BasicBolt {
 
     private static final long serialVersionUID = 1L;
     private final String outputFile;
+    private transient PrintWriter pw;
 
     public SinkBolt(String componentID, String outputFile) {
         super(componentID, 1, new RandomPartitionStrategy());
@@ -25,8 +27,15 @@ public class SinkBolt extends BasicBolt {
     }
 
     @Override
-    public void execute(ITuple tuple, OutputCollector output) throws IOException {
+    public void execute(ITuple tuple, OutputCollector output) throws IOException, InterruptedException {
         super.execute(tuple, output);
-        System.out.println((String) ((OneStringTuple) tuple).getContent()[0]);
+        if (pw == null) {
+            pw = new PrintWriter(outputFile);
+        }
+        pw.println((String) ((OneStringTuple) tuple).getContent()[0]);
+    }
+
+    public void close() {
+        pw.close();
     }
 }

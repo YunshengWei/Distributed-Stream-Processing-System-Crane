@@ -6,24 +6,53 @@ import java.io.ObjectInputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.logging.Logger;
 
+import crane.bolt.SinkBolt;
 import crane.topology.Address;
 import crane.tuple.ITuple;
 import system.Catalog;
 
 public class BoltWorker implements CraneWorker {
 
+    private class TupleReceiver implements Runnable {
+
+        @Override
+        public void run() {
+            DatagramPacket packet = new DatagramPacket(new byte[Catalog.MAX_UDP_PACKET_BYTES],
+                    Catalog.MAX_UDP_PACKET_BYTES);
+            try {
+                while (true) {
+                    receiveSocket.receive(packet);
+                    ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData());
+                    ITuple tuple = (ITuple) new ObjectInputStream(bais).readObject();
+
+                    upstreamTuples.addLast(tuple);
+                }
+            } catch (IOException | ClassNotFoundException e) {
+            }
+        }
+
+    }
+
+    private boolean finished;
     private final Task task;
-    private final DatagramSocket socket;
+    private final DatagramSocket sendSocket, receiveSocket;
     private final Logger logger;
     private final OutputCollector output;
+    private final BlockingDeque<ITuple> upstreamTuples;
 
     public BoltWorker(Task task, Address ackerAddress, Logger logger) throws SocketException {
+        this.finished = false;
         this.task = task;
-        this.socket = new DatagramSocket(task.getTaskAddress().port);
-        this.socket.setReceiveBufferSize(Catalog.UDP_RECEIVE_BUFFER_SIZE);
-        this.output = new OutputCollector(ackerAddress, socket);
+        this.receiveSocket = new DatagramSocket(task.getTaskAddress().port);
+        this.receiveSocket.setReceiveBufferSize(Catalog.UDP_BUFFER_SIZE);
+        this.sendSocket = new DatagramSocket();
+        this.sendSocket.setSendBufferSize(Catalog.UDP_BUFFER_SIZE);
+        this.output = new OutputCollector(ackerAddress, sendSocket);
+        this.upstreamTuples = new LinkedBlockingDeque<>();
         this.logger = logger;
     }
 
@@ -36,22 +65,31 @@ public class BoltWorker implements CraneWorker {
 
     @Override
     public void run() {
-        DatagramPacket packet = new DatagramPacket(new byte[Catalog.MAX_UDP_PACKET_BYTES],
-                Catalog.MAX_UDP_PACKET_BYTES);
+        new Thread(new TupleReceiver()).start();
+
         try {
             while (true) {
-                socket.receive(packet);
-                ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData());
-                ITuple tuple = (ITuple) new ObjectInputStream(bais).readObject();
-                task.comp.execute(tuple, output);
+                if (finished) {
+                    return;
+                }
+                ITuple tuple = upstreamTuples.pollFirst(Catalog.FINISH_STATUS_CHECK_GAP,
+                        Catalog.TIME_UNIT);
+                if (tuple != null) {
+                    task.comp.execute(tuple, output);
+                }
             }
-        } catch (IOException | ClassNotFoundException e) {
+        } catch (IOException | InterruptedException e) {
             logger.info(task.getTaskId() + ": terminated.");
         }
     }
 
     @Override
     public void terminate() {
-        this.socket.close();
+        this.finished = true;
+        this.receiveSocket.close();
+        this.sendSocket.close();
+        if (task.comp instanceof SinkBolt) {
+            ((SinkBolt) task.comp).close();
+        }
     }
 }
