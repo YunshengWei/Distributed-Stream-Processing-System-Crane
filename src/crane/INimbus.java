@@ -22,9 +22,10 @@ public interface INimbus extends Remote {
      *            the topology for the job
      * @throws RemoteException
      * @throws IOException
-     * @throws InterruptedException 
+     * @throws InterruptedException
      */
-    void submitTopology(Topology topology) throws RemoteException, IOException, InterruptedException;
+    void submitTopology(Topology topology)
+            throws RemoteException, IOException, InterruptedException;
 
     /**
      * Supervisor join the system by calling the method.
@@ -40,6 +41,8 @@ public interface INimbus extends Remote {
     /**
      * Notify Nimbus that the current job has finished. The method is called by
      * spout task.
+     * 
+     * @throws RemoteException
      */
-    void finishJob();
+    void finishJob() throws RemoteException;
 }

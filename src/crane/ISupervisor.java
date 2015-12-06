@@ -32,5 +32,5 @@ public interface ISupervisor extends Remote {
     /**
      * Terminate all worker threads.
      */
-    void terminateTasks();
+    void terminateTasks() throws RemoteException;
 }

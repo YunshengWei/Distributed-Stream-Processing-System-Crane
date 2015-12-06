@@ -77,7 +77,7 @@ public class Supervisor implements ISupervisor {
         }
     }
 
-    public void main(String[] args) throws IOException, NotBoundException {
+    public static void main(String[] args) throws IOException, NotBoundException {
         new Supervisor();
     }
 }

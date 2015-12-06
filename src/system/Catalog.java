@@ -95,6 +95,12 @@ public class Catalog {
     public static final String CRANE_DIR = "crane/";
     /** specify the the postfix for Crane output file */
     public static final String CRANE_RESULT_POSTFIX = "_result";
+    /** specify the time gap to check tuple timeout */
+    public static final long TIMEOUT_CHECK_GAP = 500;
+    /** how long will a tuple timeout */
+    public static final long TUPLE_TIMEOUT = 10000;
+    /** specify the time gap for spout to check its finishing status */
+    public static final long FINISH_STATUS_CHECK_GAP = 100;
 
     /** other global settings */
 

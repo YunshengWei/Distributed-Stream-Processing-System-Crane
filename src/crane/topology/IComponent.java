@@ -5,7 +5,6 @@ import java.io.Serializable;
 import java.util.List;
 
 import crane.partition.IPartitionStrategy;
-import crane.spout.ISpout;
 import crane.task.OutputCollector;
 import crane.tuple.ITuple;
 
@@ -29,6 +28,4 @@ public interface IComponent extends Serializable {
     public void execute(ITuple tuple, OutputCollector output) throws IOException;
 
     public IPartitionStrategy getPartitionStrategy();
-    
-    public ISpout getRoot();
 }

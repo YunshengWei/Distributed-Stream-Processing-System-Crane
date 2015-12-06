@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import crane.partition.IPartitionStrategy;
-import crane.spout.ISpout;
 
 public abstract class BasicComponent implements IComponent {
 
@@ -88,13 +87,4 @@ public abstract class BasicComponent implements IComponent {
     public int hashCode() {
         return getComponentID().hashCode();
     }*/
-
-    @Override
-    public ISpout getRoot() {
-        IComponent node = this;
-        while (this.parent != null) {
-            node = node.getParent();
-        }
-        return (ISpout) node;
-    }
 }

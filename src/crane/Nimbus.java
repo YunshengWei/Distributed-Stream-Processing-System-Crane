@@ -183,13 +183,14 @@ public class Nimbus implements INimbus, Observer {
     @Override
     public synchronized void registerSupervisor(InetAddress ip, ISupervisor supervisor)
             throws RemoteException {
+        nimbusLogger.info("Supervisor " + ip + " joined.");
         supervisors.put(ip, supervisor);
         taskTracker.put(ip, new ArrayList<>());
         availablePorts.put(ip, Catalog.WORKER_PORT_RANGE);
     }
 
     @Override
-    public synchronized void finishJob() {
+    public synchronized void finishJob() throws RemoteException {
         nimbusLogger.info(topology.topologyID + ": job finished.");
         cleanUp();
     }
@@ -197,7 +198,11 @@ public class Nimbus implements INimbus, Observer {
     private synchronized void cleanUp() {
         for (InetAddress add : supervisors.keySet()) {
             ISupervisor sv = supervisors.get(add);
-            sv.terminateTasks();
+            try {
+                sv.terminateTasks();
+            } catch (RemoteException e) {
+                nimbusLogger.log(Level.SEVERE, e.getMessage(), e);
+            }
             taskTracker.get(add).clear();
         }
         acker.terminate();

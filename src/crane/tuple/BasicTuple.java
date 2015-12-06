@@ -2,13 +2,17 @@ package crane.tuple;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-public abstract class AbstractTuple implements ITuple {
+public class BasicTuple implements ITuple {
 
     private static final long serialVersionUID = 1L;
 
-    protected int tupleID;
+    private int tupleID;
     protected Object[] content;
     private long salt = 0;
+    
+    public BasicTuple(int tupleID) {
+        this.tupleID = tupleID;
+    }
 
     @Override
     public int getID() {
@@ -28,5 +32,10 @@ public abstract class AbstractTuple implements ITuple {
     @Override
     public void setSalt() {
         salt = ThreadLocalRandom.current().nextLong();
+    }
+
+    @Override
+    public void setID(int id) {
+        tupleID = id;
     }
 }
