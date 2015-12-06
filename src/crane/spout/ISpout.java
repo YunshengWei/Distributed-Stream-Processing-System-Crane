@@ -1,6 +1,5 @@
 package crane.spout;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import crane.task.OutputCollector;
@@ -9,7 +8,7 @@ import crane.topology.IComponent;
 import crane.tuple.ITuple;
 
 public interface ISpout extends IComponent {
-    void open() throws FileNotFoundException;
+    void open() throws IOException;
 
     void close() throws IOException;
 

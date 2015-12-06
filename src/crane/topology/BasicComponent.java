@@ -69,22 +69,4 @@ public abstract class BasicComponent implements IComponent {
     public Address getTaskAddress(int taskNo) {
         return addresses[taskNo];
     }
-
-    /*
-    @Override
-    public boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        } else if (!(o instanceof IComponent)) {
-            return false;
-        } else {
-            IComponent that = (IComponent) o;
-            return this.getComponentID().equals(that.getComponentID());
-        }
-    }
-
-    @Override
-    public int hashCode() {
-        return getComponentID().hashCode();
-    }*/
 }

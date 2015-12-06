@@ -1,7 +1,6 @@
 package crane.spout;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 
@@ -16,13 +15,15 @@ public class FileLineSpout extends BasicSpout {
     private transient BufferedReader reader;
 
     public FileLineSpout(String componentID, String fileName) {
-        super(componentID, 1, null);
+        super(componentID);
         this.fileName = fileName;
     }
 
     @Override
-    public void open() throws FileNotFoundException {
+    public void open() throws IOException {
         reader = new BufferedReader(new FileReader(fileName));
+        // skip the first line
+        reader.readLine();
     }
 
     @Override

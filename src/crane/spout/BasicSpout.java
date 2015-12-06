@@ -9,8 +9,8 @@ import crane.tuple.ITuple;
 
 public abstract class BasicSpout extends BasicComponent implements ISpout {
 
-    public BasicSpout(String componentID, int parallelism, IPartitionStrategy ps) {
-        super(componentID, parallelism, ps);
+    public BasicSpout(String componentID) {
+        super(componentID, 0, null);
     }
 
     private static final long serialVersionUID = 1L;
