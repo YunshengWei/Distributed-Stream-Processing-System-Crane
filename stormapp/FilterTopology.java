@@ -1,4 +1,4 @@
-package stormapp;
+
 
 import java.time.LocalDateTime;
 
@@ -16,7 +16,7 @@ public class FilterTopology {
         config.setMessageTimeoutSecs(120);
         TopologyBuilder builder = new TopologyBuilder();
         builder.setSpout("LineSpout", new LineSpout("/home/nchaub2/apache-storm-0.9.5/examples/storm-starter/TT-annotations.csv",';',true));
-        builder.setBolt("FilterTopics2Bolt", new FilterBolt()).shuffleGrouping("LineSpout");
+        builder.setBolt("FilterTopics2Bolt", new FilterTopics2Bolt()).shuffleGrouping("LineSpout");
         builder.setBolt("SinkFilterBolt",new SinkFilterBolt()).shuffleGrouping("FilterTopics2Bolt");
       
         

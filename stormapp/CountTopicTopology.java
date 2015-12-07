@@ -1,4 +1,4 @@
-package stormapp;
+
 
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
@@ -13,8 +13,10 @@ public class CountTopicTopology {
         Config config = new Config();
         config.setMessageTimeoutSecs(120);
         TopologyBuilder builder = new TopologyBuilder();
-        builder.setSpout("LineSpout", new LineSpout("TT-annotations.csv",';',false));
-        builder.setBolt("CountTopicBolt", new FilterBolt()).shuffleGrouping("LineSpout");
+        builder.setSpout("LineSpout", new LineSpout("/home/nchaub2/apache-storm-0.9.5/examples/storm-starter/TT-annotations.csv",';',true));
+        builder.setBolt("FilterTopics2Bolt", new FilterTopics2Bolt()).shuffleGrouping("LineSpout");
+        builder.setBolt("CountTopicBolt", new CountTopicBolt()).shuffleGrouping("FilterTopics2Bolt");
+        builder.setBolt("SinkCountBolt",new SinkCountBolt()).shuffleGrouping("CountTopicBolt");
         
         config.setDebug(true);
 

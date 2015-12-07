@@ -1,5 +1,4 @@
 
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
@@ -13,17 +12,17 @@ import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 
-public class SinkFilterBolt extends BaseRichBolt{
+public class SinkCountBolt extends BaseRichBolt {
 
     private OutputCollector collector;
     private PrintWriter out;
     @Override
     public void execute(Tuple input) {
-        String tweetid = (String) input.getValueByField("tweetid");
         String topic = (String) input.getValueByField("topic");
+        Integer count = (Integer) input.getValueByField("count");
         try {
             
-            out.println(tweetid+" "+topic+" "+LocalDateTime.now());
+            out.println(topic+" "+count);
             out.flush();
         } catch (Exception e) {
             // TODO Auto-generated catch block
@@ -37,7 +36,7 @@ public class SinkFilterBolt extends BaseRichBolt{
     @Override
     public void prepare(Map map, TopologyContext topologContext, OutputCollector collector) {
         try {
-            out = new PrintWriter(new File("/home/nchaub2/apache-storm-0.9.5/examples/storm-starter/file2.txt"));
+            out = new PrintWriter(new File("/home/nchaub2/apache-storm-0.9.5/examples/storm-starter/file3.txt"));
         } catch (FileNotFoundException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -51,6 +50,5 @@ public class SinkFilterBolt extends BaseRichBolt{
         declarer.declare(new Fields("tweetOutput"));
         
     }
-
 
 }

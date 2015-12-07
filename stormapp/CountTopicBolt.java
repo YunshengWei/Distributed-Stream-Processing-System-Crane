@@ -1,4 +1,4 @@
-package stormapp;
+
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,8 +26,9 @@ public class CountTopicBolt extends BaseRichBolt {
             count = 0;
           count++;
           counts.put(topic, count);
-          collector.emit(new Values(topic, count));
+          collector.emit(tuple,new Values(topic, count));
           System.out.println(topic+": "+count);
+          collector.ack(tuple);
         }
 
         @Override

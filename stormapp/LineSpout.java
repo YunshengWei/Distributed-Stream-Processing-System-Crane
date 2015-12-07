@@ -1,4 +1,4 @@
-package stormapp;
+
 import sdfs.Client;
 import sdfs.OutsideClient;
 import backtype.storm.spout.SpoutOutputCollector;
@@ -28,6 +28,7 @@ public class LineSpout extends BaseRichSpout {
   private SpoutOutputCollector _collector;
   private BufferedReader reader;
   private AtomicLong linesRead;
+  private int i = 0;
 
   public LineSpout(String filename, char separator, boolean includesHeaderRow) {
     this.fileName = filename;
@@ -51,15 +52,23 @@ public class LineSpout extends BaseRichSpout {
   @Override
   public void nextTuple() {
     try {
-      String line = reader.readLine();
-      if (line == null) {
-          reader = new BufferedReader(new FileReader(fileName), separator); //edit dir for storm
-          line = reader.readLine();
-      }
+        String line = reader.readLine();
+        if (line == null) {
+            try {
+                if (i == 100) {
+                  return null;
+                }
+                i += 1;
+                reader = new BufferedReader(new FileReader(fileName), separator); //edit dir for storm
+                // read and ignore the header if one exists
+                if (includesHeaderRow) reader.readLine();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
         long id=linesRead.incrementAndGet();
         _collector.emit(new Values(line),id);
-      
-      
+        
     } catch (Exception e) {
       e.printStackTrace();
     }
