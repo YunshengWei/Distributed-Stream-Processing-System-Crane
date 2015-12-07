@@ -11,8 +11,9 @@ public class SplitSentenceBolt extends BasicBolt {
 
     private static final long serialVersionUID = 1L;
 
-    public SplitSentenceBolt(String componentID, int parallelism, IPartitionStrategy ps) {
-        super(componentID, parallelism, ps);
+    public SplitSentenceBolt(String componentID, int parallelism, IPartitionStrategy ps,
+            int sendGap) {
+        super(componentID, parallelism, ps, sendGap);
     }
 
     @Override

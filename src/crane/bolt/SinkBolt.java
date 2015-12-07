@@ -1,5 +1,6 @@
 package crane.bolt;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collections;
@@ -9,6 +10,7 @@ import crane.partition.RandomPartitionStrategy;
 import crane.task.OutputCollector;
 import crane.tuple.ITuple;
 import crane.tuple.OneStringTuple;
+import system.Catalog;
 
 public class SinkBolt extends BasicBolt {
 
@@ -17,7 +19,7 @@ public class SinkBolt extends BasicBolt {
     private transient PrintWriter pw;
 
     public SinkBolt(String componentID, String outputFile) {
-        super(componentID, 1, new RandomPartitionStrategy());
+        super(componentID, 1, new RandomPartitionStrategy(), 0);
         this.outputFile = outputFile;
     }
 
@@ -29,10 +31,11 @@ public class SinkBolt extends BasicBolt {
     @Override
     public void execute(ITuple tuple, OutputCollector output) throws IOException, InterruptedException {
         super.execute(tuple, output);
-        if (pw == null) {
-            pw = new PrintWriter(outputFile);
-        }
         pw.println((String) ((OneStringTuple) tuple).getContent()[0]);
+    }
+    
+    public void open() throws FileNotFoundException {
+        pw = new PrintWriter(Catalog.CRANE_DIR + outputFile);
     }
 
     public void close() {

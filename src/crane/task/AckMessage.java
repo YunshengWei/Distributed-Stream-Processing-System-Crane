@@ -28,18 +28,18 @@ public class AckMessage implements Serializable {
     public AckMessage(byte[] bytes) {
         int tid = ByteBuffer.wrap(bytes, 0, 4).getInt();
         long cs = ByteBuffer.wrap(bytes, 4, 8).getLong();
-        
+
         this.tupleID = tid;
         this.checksum = cs;
     }
-    
+
     public byte[] toBytes() {
         ByteBuffer bb = ByteBuffer.allocate(12);
         bb.putInt(tupleID);
         bb.putLong(checksum);
         return bb.array();
     }
-    
+
     @Override
     public String toString() {
         return String.format("(%s, %s)", tupleID, checksum);

@@ -16,7 +16,7 @@ import crane.topology.Topology;
  */
 public interface INimbus extends Remote {
     /**
-     * Submit the job to nimbus.
+     * Submit the job to Nimbus.
      * 
      * @param topology
      *            the topology for the job

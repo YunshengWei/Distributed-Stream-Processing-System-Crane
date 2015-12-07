@@ -50,7 +50,7 @@ public class Catalog {
     /** specify the port number of data node service */
     public static final int SDFS_DATANODE_PORT = 60004;
     /** specify the address of introducer */
-    public static final String INTRODUCER_ADDRESS = "fa15-cs425-g13-03.cs.illinois.edu";
+    public static final String INTRODUCER_ADDRESS = "fa15-cs425-g13-04.cs.illinois.edu";
     /** specify the location where data node stores files */
     public static final String SDFS_DIR = "sdfs/";
     /** specify the log for SDFS */
@@ -74,7 +74,7 @@ public class Catalog {
     public static final long REPLICATION_SILENCE_PERIOD = 20000;
 
     /** Settings for Crane */
-    public static final String NIMBUS_ADDRESS = "fa15-cs425-g13-03.cs.illinois.edu";
+    public static final String NIMBUS_ADDRESS = "fa15-cs425-g13-04.cs.illinois.edu";
     /** specify the port number on which membership service is running */
     public static final int CRANE_MEMBERSHIP_SERVICE_PORT = 60005;
     /** specify the port number on which Supervisor service is running */
@@ -93,18 +93,23 @@ public class Catalog {
     public static final String ACKER_LOG = "ack.log";
     /** specify the directory for Crane input */
     public static final String CRANE_DIR = "crane/";
-    /** specify the the postfix for Crane output file */
-    public static final String CRANE_RESULT_POSTFIX = "_result";
     /** specify the time gap to check tuple timeout */
     public static final long TIMEOUT_CHECK_GAP = 500;
     /** how long will a tuple timeout */
-    public static final long TUPLE_TIMEOUT = 30000;
-    /**
-     * specify the time gap for spout and bolts to check its finishing status
-     */
+    public static final long TUPLE_TIMEOUT = 20000;
+    /** specify the time gap for spout and bolts to check finishing status */
     public static final long FINISH_STATUS_CHECK_GAP = 100;
-    /** the UDP buffer size */
-    public static final int UDP_BUFFER_SIZE = 212992;
+    /**
+     * specify the UDP receiver buffer size. It is useful for buffering multiple
+     * packets when packets arrive faster than are being received
+     */
+    public static final int UDP_RECEIVE_BUFFER_SIZE = 212992;
+    /**
+     * default time to sleep after sending a tuple (Measured in milliseconds).
+     * Throttle the emitting speed turns out to be extremely important to
+     * control packet loss rate.
+     */
+    public static final int DEFAULT_SENDING_GAP = 100;
 
     /** other global settings */
 

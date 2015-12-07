@@ -15,14 +15,16 @@ public abstract class BasicComponent implements IComponent {
     private final int parallelism;
     private final Address[] addresses;
     private final IPartitionStrategy ps;
-
-    public BasicComponent(String componentID, int parallelism, IPartitionStrategy ps) {
+    protected final int sendGap;
+    
+    public BasicComponent(String componentID, int parallelism, IPartitionStrategy ps, int sendGap) {
         this.componentID = componentID;
         this.parallelism = parallelism;
         this.children = new ArrayList<>();
         this.addresses = new Address[this.parallelism];
         this.ps = ps;
-        parent = null;
+        this.parent = null;
+        this.sendGap = sendGap;
     }
 
     @Override

@@ -76,6 +76,7 @@ public class Supervisor implements ISupervisor {
         for (CraneWorker worker : taskTracker.values()) {
             worker.terminate();
         }
+        taskTracker.clear();
     }
 
     public static void main(String[] args) throws IOException, NotBoundException {

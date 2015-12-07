@@ -16,14 +16,16 @@ public class TweetIDUserJoinBolt extends BasicBolt {
 
     private static final long serialVersionUID = 1L;
 
-    public TweetIDUserJoinBolt(String componentID, int parallelism, IPartitionStrategy ps) {
-        super(componentID, parallelism, ps);
+    public TweetIDUserJoinBolt(String componentID, int parallelism, IPartitionStrategy ps,
+            int sendGap) {
+        super(componentID, parallelism, ps, sendGap);
     }
 
     @Override
     public List<ITuple> map(ITuple tuple) throws IOException {
         OneStringTuple t = (OneStringTuple) tuple;
-        String tweetid = (String) t.getContent()[0];
+        String s = (String) t.getContent()[0];
+        String tweetid = s.split("\t")[0];
 
         List<String> lines = FileUtils.readLines(new File(Catalog.CRANE_DIR + "tweets/" + tweetid),
                 Catalog.ENCODING);

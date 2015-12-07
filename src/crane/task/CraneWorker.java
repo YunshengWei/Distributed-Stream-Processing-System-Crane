@@ -10,7 +10,7 @@ public interface CraneWorker extends Runnable {
      * @param comp
      */
     void setTask(Task task);
-    
+
     /**
      * Terminate the worker
      */

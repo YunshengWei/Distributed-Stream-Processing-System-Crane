@@ -48,9 +48,8 @@ public class BoltWorker implements CraneWorker {
         this.finished = false;
         this.task = task;
         this.receiveSocket = new DatagramSocket(task.getTaskAddress().port);
-        this.receiveSocket.setReceiveBufferSize(Catalog.UDP_BUFFER_SIZE);
+        this.receiveSocket.setReceiveBufferSize(Catalog.UDP_RECEIVE_BUFFER_SIZE);
         this.sendSocket = new DatagramSocket();
-        this.sendSocket.setSendBufferSize(Catalog.UDP_BUFFER_SIZE);
         this.output = new OutputCollector(ackerAddress, sendSocket);
         this.upstreamTuples = new LinkedBlockingDeque<>();
         this.logger = logger;
@@ -66,15 +65,22 @@ public class BoltWorker implements CraneWorker {
     @Override
     public void run() {
         new Thread(new TupleReceiver()).start();
-
+        
         try {
+            if (task.comp instanceof SinkBolt) {
+                ((SinkBolt) task.comp).open();
+            }
+            
             while (true) {
                 if (finished) {
                     return;
                 }
                 ITuple tuple = upstreamTuples.pollFirst(Catalog.FINISH_STATUS_CHECK_GAP,
                         Catalog.TIME_UNIT);
+                
                 if (tuple != null) {
+                    ////////
+                    logger.info("Received tuple " + tuple.getID() + " " + tuple.getContent()[0]);
                     task.comp.execute(tuple, output);
                 }
             }

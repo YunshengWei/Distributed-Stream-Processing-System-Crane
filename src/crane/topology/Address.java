@@ -25,7 +25,7 @@ public class Address implements Serializable {
             return this.IP.equals(that.IP) && this.port == that.port;
         }
     }
-    
+
     @Override
     public String toString() {
         return String.format("%s:%s", IP, port);

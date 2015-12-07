@@ -8,14 +8,14 @@ import crane.tuple.ITuple;
 import crane.tuple.OneStringTuple;
 import system.Catalog;
 
-public class FileLineSpout extends BasicSpout {
+public class CircularFileLineSpout extends BasicSpout {
 
     private static final long serialVersionUID = 1L;
 
     private final String fileName;
     private transient BufferedReader reader;
-    
-    public FileLineSpout(String componentID, String fileName, int sendGap) {
+
+    public CircularFileLineSpout(String componentID, String fileName, int sendGap) {
         super(componentID, sendGap);
         this.fileName = fileName;
     }
@@ -33,11 +33,11 @@ public class FileLineSpout extends BasicSpout {
     @Override
     public ITuple nextTuple() throws IOException {
         String line = reader.readLine();
-        if (line != null) {
-            OneStringTuple tuple = new OneStringTuple(0, line);
-            return tuple;
-        } else {
-            return null;
+        if (line == null) {
+            open();
+            line = reader.readLine();
         }
+        OneStringTuple tuple = new OneStringTuple(0, line);
+        return tuple;
     }
 }

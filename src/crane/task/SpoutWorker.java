@@ -108,9 +108,8 @@ public class SpoutWorker implements CraneWorker {
         this.task = task;
         this.spout = (ISpout) task.comp;
         this.recSocket = new DatagramSocket(task.getTaskAddress().port);
-        this.recSocket.setReceiveBufferSize(Catalog.UDP_BUFFER_SIZE);
+        this.recSocket.setReceiveBufferSize(Catalog.UDP_RECEIVE_BUFFER_SIZE);
         this.sendSocket = new DatagramSocket();
-        this.sendSocket.setSendBufferSize(Catalog.UDP_BUFFER_SIZE);
         this.output = new OutputCollector(ackerAddress, sendSocket);
         this.nimbus = nimbus;
         this.logger = logger;
@@ -134,15 +133,15 @@ public class SpoutWorker implements CraneWorker {
     public void run() {
         try {
             new Thread(new AckReceiver(recSocket)).start();
+            new Thread(new TimeoutChecker()).start();
 
             spout.open();
-
-            new Thread(new TimeoutChecker()).start();
 
             ITuple tuple;
             while ((tuple = spout.nextTuple()) != null) {
                 sendTuple(tuple);
-                Thread.sleep(50);
+                ////////
+                logger.info("Sending tuple " + tuple.getID() + " " + tuple.getContent()[0]);
             }
 
             spout.close();
@@ -162,7 +161,7 @@ public class SpoutWorker implements CraneWorker {
         }
     }
 
-    private void sendTuple(ITuple tuple) throws IOException {
+    private void sendTuple(ITuple tuple) throws IOException, InterruptedException {
         spout.execute(tuple, output);
         pendingTuples.add(new TupleStatus(tuple, System.currentTimeMillis()));
     }
