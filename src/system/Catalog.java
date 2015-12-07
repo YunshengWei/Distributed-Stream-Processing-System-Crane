@@ -96,9 +96,9 @@ public class Catalog {
     /** specify the time gap to check tuple timeout */
     public static final long TIMEOUT_CHECK_GAP = 500;
     /** how long will a tuple timeout */
-    public static final long TUPLE_TIMEOUT = 5000;
+    public static final long TUPLE_TIMEOUT = 20000;
     /** specify the time gap for spout and bolts to check finishing status */
-    public static final long FINISH_STATUS_CHECK_GAP = 100;
+    public static final long FINISH_STATUS_CHECK_GAP = 500;
     /**
      * specify the UDP receiver buffer size. It is useful for buffering multiple
      * packets when packets arrive faster than are being received
