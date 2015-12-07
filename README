@@ -14,8 +14,8 @@ to install JDK 8 and set $PATH and $CLASSPATH
 3. To clean, type:
 	make clean
 
-4. Parameters for the whole system are stored in src/Catalog.java. Don't forget to recompile
-after making any changes. For simplicity, we do not store them in xml files.
+4. All configuration parameters for the whole system are stored in src/Catalog.java.
+For simplicity, we do not store them in xml files.
 
 Stage 1:
 Distributed Log Querier
@@ -55,5 +55,11 @@ SDFS also supports outside clients. However, outside clients assume master node 
 	java sdfs.OutsideClient [master node IP]
 
 Stage 4:
-In stage 4, we developed a distributed stream processing system called Crane, which is like Apache Storm.
+In stage 4, we developed a distributed stream processing system called Crane.
 
+Basic usage:
+1. To run Nimbus, type:
+	java crane.Nimbus
+2. To run Supervisor, type:
+	java crane.Supervisor
+3. An application for Crane needs to define a topology, and then submit the topology to Nimbus.
