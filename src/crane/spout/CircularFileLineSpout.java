@@ -14,6 +14,7 @@ public class CircularFileLineSpout extends BasicSpout {
 
     private final String fileName;
     private transient BufferedReader reader;
+    private int i = 0;
 
     public CircularFileLineSpout(String componentID, String fileName, int sendGap) {
         super(componentID, sendGap);
@@ -34,6 +35,10 @@ public class CircularFileLineSpout extends BasicSpout {
     public ITuple nextTuple() throws IOException {
         String line = reader.readLine();
         if (line == null) {
+            if (i == 2) {
+                return null;
+            }
+            i += 1;
             open();
             line = reader.readLine();
         }

@@ -21,8 +21,8 @@ public class TweetTopicCount {
 
     public static void main(String[] args)
             throws IOException, InterruptedException, NotBoundException {
-        ISpout spout = new CircularFileLineSpout("spout", "TT-annotations.csv", 0);
-        IBolt bolt1 = new TweerTopicFilterBolt("bolt-1", 1, new RandomPartitionStrategy(), 0,
+        ISpout spout = new CircularFileLineSpout("spout", "TT-annotations.csv", 50);
+        IBolt bolt1 = new TweerTopicFilterBolt("bolt-1", 5, new RandomPartitionStrategy(), 0,
                 "ongoing-event", "news", "meme");
         IBolt bolt2 = new CountBolt("bolt-2", 1, new HashPartitionStrategy(), 0);
         IBolt sink = new SinkBolt("sink", "TweetTopicCount_result.txt");

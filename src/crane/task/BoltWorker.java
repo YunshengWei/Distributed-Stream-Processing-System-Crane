@@ -97,5 +97,6 @@ public class BoltWorker implements CraneWorker {
         if (task.comp instanceof SinkBolt) {
             ((SinkBolt) task.comp).close();
         }
+        logger.info(task.getTaskId() + ": terminated.");
     }
 }
