@@ -30,7 +30,7 @@ public abstract class BasicComponent implements IComponent {
     @Override
     public void addChild(IComponent comp) {
         children.add(comp);
-        comp.setParent(comp);
+        comp.setParent(this);
     }
 
     @Override
