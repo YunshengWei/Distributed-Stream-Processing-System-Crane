@@ -21,7 +21,6 @@ public abstract class BasicBolt extends BasicComponent implements IBolt {
             throws IOException, InterruptedException {
         long checksum = tuple.getSalt();
         List<ITuple> tuples = map(tuple);
-        ////long checksum_
         for (ITuple t : tuples) {
             checksum = output.emit(t, this, checksum);
             if (sendGap > 0) {

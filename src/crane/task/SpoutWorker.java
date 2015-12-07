@@ -1,11 +1,10 @@
 package crane.task;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -46,14 +45,18 @@ public class SpoutWorker implements CraneWorker {
             try {
                 while (true) {
                     ds.receive(packet);
-                    ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData());
-                    int tupleId = (int) new ObjectInputStream(bais).readObject();
-                    
+                    // ByteArrayInputStream bais = new
+                    // ByteArrayInputStream(packet.getData());
+                    // int tupleId = (int) new
+                    // ObjectInputStream(bais).readObject();
+
+                    int tupleId = ByteBuffer.wrap(packet.getData()).getInt();
+
                     logger.info(String.format("Received ack for tuple %s", tupleId));
-                    
+
                     completedTuples.add(tupleId);
                 }
-            } catch (IOException | ClassNotFoundException e) {
+            } catch (IOException e) {
                 logger.info("Ack receiver thread terminated.");
             }
         }
@@ -74,6 +77,7 @@ public class SpoutWorker implements CraneWorker {
                         TupleStatus ts = pendingTuples.get(0);
                         if (completedTuples.contains(ts.tuple.getID())) {
                             pendingTuples.remove(0);
+                            completedTuples.remove(ts.tuple.getID());
                         } else if (currentTime - ts.timestamp > Catalog.TUPLE_TIMEOUT) {
                             pendingTuples.remove(0);
                             sendTuple(ts.tuple);

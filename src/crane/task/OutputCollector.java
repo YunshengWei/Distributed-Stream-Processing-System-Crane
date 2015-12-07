@@ -8,7 +8,6 @@ import java.net.SocketException;
 import crane.topology.Address;
 import crane.topology.IComponent;
 import crane.tuple.ITuple;
-import system.CommonUtils;
 
 public class OutputCollector {
     private final DatagramSocket sendSocket;
@@ -37,7 +36,13 @@ public class OutputCollector {
             tuple.setSalt();
 
             Address add = child.getTaskAddress(taskNo);
-            CommonUtils.sendObjectOverUDP(tuple, add.IP, add.port, sendSocket);
+            // CommonUtils.sendObjectOverUDP(tuple, add.IP, add.port,
+            // sendSocket);
+            // An attempt to boost performance
+            byte[] bytes = tuple.toBytes();
+            DatagramPacket packet = new DatagramPacket(bytes, bytes.length, add.IP, add.port);
+            sendSocket.send(packet);
+
             checksum ^= tuple.getSalt();
         }
         return checksum;

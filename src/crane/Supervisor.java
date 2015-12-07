@@ -32,14 +32,16 @@ public class Supervisor implements ISupervisor {
             Catalog.LOG_DIR + Catalog.SUPERVISOR_LOG, true);
 
     public Supervisor() throws NotBoundException, IOException {
-        // For simplicity, we assume acker is running on the same machine as Nimbus
+        // For simplicity, we assume acker is running on the same machine as
+        // Nimbus
         ackerAddress = new Address(InetAddress.getByName(Catalog.NIMBUS_ADDRESS),
                 Catalog.ACKER_PORT);
 
         ggms = new GossipGroupMembershipService(InetAddress.getByName(Catalog.NIMBUS_ADDRESS),
                 Catalog.CRANE_MEMBERSHIP_SERVICE_PORT, Catalog.CRANE_MEMBERSHIP_SERVICE_PORT);
+
         taskTracker = new HashMap<>();
-        
+
         ggms.startServe();
         Registry registry = LocateRegistry.getRegistry(Catalog.NIMBUS_ADDRESS, Catalog.NIMBUS_PORT);
         nimbus = (INimbus) registry.lookup("nimbus");

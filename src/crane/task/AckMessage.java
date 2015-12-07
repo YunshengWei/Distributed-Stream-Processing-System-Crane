@@ -26,11 +26,8 @@ public class AckMessage implements Serializable {
      * @param bytes
      */
     public AckMessage(byte[] bytes) {
-        int tid = ByteBuffer.wrap(bytes, 0, 4).getInt();
-        long cs = ByteBuffer.wrap(bytes, 4, 8).getLong();
-
-        this.tupleID = tid;
-        this.checksum = cs;
+        this.tupleID = ByteBuffer.wrap(bytes, 0, 4).getInt();
+        this.checksum = ByteBuffer.wrap(bytes, 4, 8).getLong();
     }
 
     public byte[] toBytes() {

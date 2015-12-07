@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,7 +15,6 @@ import crane.task.CraneWorker;
 import crane.task.Task;
 import crane.topology.Address;
 import system.Catalog;
-import system.CommonUtils;
 
 /**
  * Acker takes responsible for acking for tuples.
@@ -56,14 +56,20 @@ public class Acker implements CraneWorker {
                 int tid = msg.tupleID;
                 long checksum = msg.checksum;
                 logger.info(String.format("Received checksum for tupleID %s: %s", tid, checksum));
-                
+
                 long cs = tupleChecksums.getOrDefault(tid, 0L);
                 cs ^= checksum;
                 logger.info(String.format("New checksum for tupleID %s: %s", tid, cs));
 
                 if (cs == 0) {
                     tupleChecksums.remove(tid);
-                    CommonUtils.sendObjectOverUDP(tid, spoutAddress.IP, spoutAddress.port, ds);
+                    ////////
+                    DatagramPacket p = new DatagramPacket(
+                            ByteBuffer.allocate(4).putInt(tid).array(), 4, spoutAddress.IP,
+                            spoutAddress.port);
+                    ds.send(p);
+                    // CommonUtils.sendObjectOverUDP(tid, spoutAddress.IP,
+                    // spoutAddress.port, ds);
                 } else {
                     tupleChecksums.put(tid, cs);
                 }

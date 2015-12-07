@@ -1,8 +1,6 @@
 package crane.task;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
@@ -13,6 +11,7 @@ import java.util.logging.Logger;
 import crane.bolt.SinkBolt;
 import crane.topology.Address;
 import crane.tuple.ITuple;
+import crane.tuple.OneStringTuple;
 import system.Catalog;
 
 public class BoltWorker implements CraneWorker {
@@ -26,12 +25,18 @@ public class BoltWorker implements CraneWorker {
             try {
                 while (true) {
                     receiveSocket.receive(packet);
-                    ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData());
-                    ITuple tuple = (ITuple) new ObjectInputStream(bais).readObject();
+                    // ByteArrayInputStream bais = new
+                    // ByteArrayInputStream(packet.getData());
+                    // ITuple tuple = (ITuple) new
+                    // ObjectInputStream(bais).readObject();
 
+                    // Do not use Java deserialization for high performance
+                    OneStringTuple tuple = new OneStringTuple(packet.getData());
+
+                    //////
                     upstreamTuples.addLast(tuple);
                 }
-            } catch (IOException | ClassNotFoundException e) {
+            } catch (IOException e) {
             }
         }
 
@@ -65,19 +70,19 @@ public class BoltWorker implements CraneWorker {
     @Override
     public void run() {
         new Thread(new TupleReceiver()).start();
-        
+
         try {
             if (task.comp instanceof SinkBolt) {
                 ((SinkBolt) task.comp).open();
             }
-            
+
             while (true) {
                 if (finished) {
                     return;
                 }
                 ITuple tuple = upstreamTuples.pollFirst(Catalog.FINISH_STATUS_CHECK_GAP,
                         Catalog.TIME_UNIT);
-                
+
                 if (tuple != null) {
                     ////////
                     logger.info("Received tuple " + tuple.getID() + " " + tuple.getContent()[0]);

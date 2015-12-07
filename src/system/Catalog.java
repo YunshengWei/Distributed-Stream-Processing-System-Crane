@@ -96,7 +96,7 @@ public class Catalog {
     /** specify the time gap to check tuple timeout */
     public static final long TIMEOUT_CHECK_GAP = 500;
     /** how long will a tuple timeout */
-    public static final long TUPLE_TIMEOUT = 20000;
+    public static final long TUPLE_TIMEOUT = 5000;
     /** specify the time gap for spout and bolts to check finishing status */
     public static final long FINISH_STATUS_CHECK_GAP = 100;
     /**
